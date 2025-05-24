@@ -2,3 +2,4 @@ Flask==2.3.3
 openai==1.35.11
 python-dotenv==1.0.0 # Optional, but good for managing environment variables 
 gunicorn==22.0.0
+flask-cors==4.0.0  # Ensure flask-cors is also included for handling CORS on Render
