@@ -50,7 +50,7 @@ def chat():
     # --- Call OpenAI API ---
     try:
         chat_completion = client.chat.completions.create(
-            model="gpt-4", # Or "gpt-3.5-turbo" based on your preference/access
+            model="gpt-4o-mini", # Or "gpt-3.5-turbo" based on your preference/access
             messages=messages
         )
         ai_response = chat_completion.choices[0].message.content
