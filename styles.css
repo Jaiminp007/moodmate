@@ -1,0 +1,680 @@
+:root {
+  --navy: #1B263B;
+  --yellow: #FCBF49;
+  --white: #EDF6F9;
+  --font: 'Poppins', Arial, sans-serif;
+
+  /* Default Dark Theme Colors */
+  --bg-color: var(--navy);
+  --text-color: var(--white);
+  --bubble-text-color: #333;
+  --settings-icon-bg: var(--white);
+  --settings-icon-stroke: var(--navy);
+  --modal-bg-color: var(--white);
+  --modal-text-color: var(--navy);
+  --toggle-bg: var(--white);
+  --toggle-knob: var(--yellow);
+}
+
+body.light-mode {
+   /* Light Theme Color Overrides */
+  --bg-color: var(--white);
+  --text-color: var(--navy);
+  /* --bubble-text-color remains #333 as it's on a yellow background */
+  --settings-icon-bg: var(--navy);
+  --settings-icon-stroke: var(--white);
+  --modal-bg-color: #f0f0f0; /* Slightly off-white for modal in light mode */
+  --modal-text-color: var(--navy);
+  --toggle-bg: var(--navy);
+  --toggle-knob: var(--white);
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font);
+  box-sizing: border-box;
+  transition: background-color 0.3s, color 0.3s;
+  position: relative;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 36px 56px 0 56px;
+  box-sizing: border-box;
+}
+
+.navbar-controls-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.nav-links {
+  display: flex;
+  gap: 60px;
+}
+
+.nav-link {
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 1.7rem;
+  position: relative;
+  padding-bottom: 4px;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--yellow);
+}
+
+.nav-link.active {
+  font-weight: 500;
+  color: var(--yellow);
+}
+
+.nav-link.active::after {
+  content: '';
+  display: block;
+  width: 120%;
+  height: 5px;
+  background: var(--yellow);
+  border-radius: 3px;
+  position: absolute;
+  left: 0%;
+  bottom: -5px;
+}
+
+.nav-link.active::after, .nav-link:not(.active):hover::after {
+  content: '';
+  display: block;
+  width: 120%; /* Same as active link's underline */
+  height: 5px;  /* Same as active link's underline */
+  background: var(--yellow);
+  border-radius: 3px; /* Same as active link's underline */
+  position: absolute;
+  left: 0%; /* Same as active link's underline */
+  bottom: -5px; /* Same as active link's underline */
+}
+
+/* Ensure only one underline if active link is hovered */
+.nav-link.active:hover::after {
+  /* Styles are already defined by .nav-link.active::after, so no need to repeat unless overriding */
+  /* This empty rule can be removed if no specific override is needed */
+}
+
+.toggle-switch {
+  position: relative;
+  width: 80px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-switch input[type="checkbox"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch label {
+  display: block;
+  width: 60px; /* Decreased width */
+  height: 35px; /* Cylindrical: Shorter */
+  background: var(--toggle-bg);
+  border-radius: 20px; /* Rounded ends for cylinder */
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+  border: 1px solid #000; /* Black border */
+  box-sizing: border-box; /* Ensure border is inside the width/height */
+}
+
+.toggle-switch label::after {
+  content: '';
+  position: absolute;
+  top: 5px; /* Adjusted for visual centering */
+  width: 22px; /* Smaller knob to fit */
+  height: 22px;
+  background: var(--toggle-knob);
+  border-radius: 50%;
+  transition: left 0.3s, background-color 0.3s;
+}
+
+/* Navbar toggle: Dark Mode (checked) = Knob on the left */
+.toggle-switch input#theme-toggle:checked + label::after {
+  left: 5px; 
+}
+
+/* Navbar toggle: Light Mode (unchecked) = Knob on the right */
+.toggle-switch input#theme-toggle:not(:checked) + label::after {
+  left: 32px; /* (60px width - 22px knob - 5px padding from left - 1px border adjustment) */
+}
+
+.settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin-left: 16px;
+}
+
+.settings-btn img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  background: transparent; /* Remove background */
+  border-radius: 50%;
+  /* box-shadow: 0 2px 8px rgba(27,38,59,0.08); Removed as it implies a background */
+}
+
+.settings-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(27, 38, 59, 0.6);
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-modal-content {
+  background: var(--modal-bg-color);
+  color: var(--modal-text-color);
+  margin: auto;
+  padding: 32px 24px 24px 24px;
+  border-radius: 18px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(27,38,59,0.18);
+  text-align: center;
+}
+
+.close-modal {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--modal-text-color);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-modal:hover {
+  color: var(--yellow);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.bubble-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  top: -50px;
+}
+
+/* Styles for the listening bubbles container */
+.listening-bubbles {
+    display: none; /* Hidden by default */
+    width: 380px; /* Match main bubble width */
+    height: 380px; /* Match main bubble height */
+    justify-content: space-around; /* Distribute bubbles horizontally */
+    align-items: center;
+    position: absolute; /* Position over the bubble-group */
+    top: 0;
+    left: 0;
+    z-index: 3; /* Ensure it's above other bubble elements */
+}
+
+/* Styles for the individual listening bubbles */
+.listening-bubble {
+    width: 50px; /* Adjust size as needed */
+    height: 50px; /* Adjust size as needed */
+    background: var(--yellow); /* Or a different color */
+    border-radius: 50%;
+    opacity: 0; /* Start hidden */
+    transform: scale(0); /* Start small */
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+/* When bubble-group is listening, hide main bubble and show listening bubbles */
+.bubble-group.listening .main-bubble {
+    /* Remove this rule - we want the main bubble to be visible and scale */
+    /* display: none !important; */ 
+}
+
+.bubble-group.listening .listening-bubbles {
+    display: flex !important; /* Show the container */
+}
+
+/* Animate the listening bubbles when the parent has the listening class */
+.bubble-group.listening .listening-bubble {
+    opacity: 1; /* Fade in */
+    transform: scale(1); /* Scale up */
+}
+
+/* Add staggered animation delay */
+.bubble-group.listening .listening-bubble:nth-child(1) { transition-delay: 0.1s; }
+.bubble-group.listening .listening-bubble:nth-child(2) { transition-delay: 0.2s; }
+.bubble-group.listening .listening-bubble:nth-child(3) { transition-delay: 0.3s; }
+.bubble-group.listening .listening-bubble:nth-child(4) { transition-delay: 0.4s; }
+
+.main-bubble {
+  width: 380px;
+  height: 380px;
+  background: var(--yellow);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: #333;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+  /* Add transition for smooth scaling */
+  transition: box-shadow 0.2s, transform 0.2s ease-out;
+  z-index: 2;
+  text-align: center;
+}
+
+.main-bubble:hover {
+  box-shadow: 0 8px 48px rgba(0,0,0,0.16);
+  transform: scale(1.03);
+}
+
+.bubble {
+  position: absolute;
+  background: var(--yellow);
+  border-radius: 50%;
+  z-index: 1;
+}
+
+.small-bubble-1 {
+  width: 80px;
+  height: 80px;
+  right: -60px;
+  bottom: 40px;
+}
+
+.small-bubble-2 {
+  width: 48px;
+  height: 48px;
+  right: -20px;
+  bottom: -30px;
+}
+
+@media (max-width: 700px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px 20px 0 20px;
+  }
+  .nav-links {
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    align-items: flex-start;
+    margin-bottom: 15px;
+  }
+  .nav-link {
+    font-size: 1.3rem;
+    padding-bottom: 8px;
+  }
+  .nav-link.active::after, .nav-link:not(.active):hover::after {
+    width: 100%;
+    height: 3px;
+    bottom: -2px;
+  }
+  .navbar-controls-right {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .toggle-switch label {
+    width: 50px;
+    height: 30px;
+  }
+  .toggle-switch label::after {
+    width: 18px;
+    height: 18px;
+    top: 4px;
+  }
+  .toggle-switch input#theme-toggle:not(:checked) + label::after {
+    left: 28px;
+  }
+  .settings-btn img {
+    width: 35px;
+    height: 35px;
+  }
+  .main-content {
+    padding: 15px;
+  }
+  .page-heading {
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+  }
+  .main-bubble {
+    width: 280px;
+    height: 280px;
+    font-size: 1.1rem;
+  }
+  .small-bubble-1 {
+    width: 60px;
+    height: 60px;
+    right: -30px;
+    bottom: 20px;
+  }
+  .small-bubble-2 {
+    width: 35px;
+    height: 35px;
+    right: -15px;
+    bottom: -15px;
+  }
+  .bubble-group {
+    min-height: 350px;
+    top: -30px;
+  }
+  .settings-modal-content {
+    width: 90%;
+    padding: 20px 15px 15px 15px;
+    border-radius: 12px;
+  }
+  .settings-modal-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+  .setting-item {
+    padding: 15px 0;
+  }
+  .setting-item label, .settings-link {
+    font-size: 0.9rem;
+  }
+  .btn-primary {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  .emotion-display {
+    bottom: 10px;
+    left: 10px;
+  }
+  .emotion-emoji-display {
+    width: 120px;
+    height: 120px;
+    padding: 8px;
+  }
+  #emotionText {
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+  }
+  .emotion-emoji-display img {
+    width: 80px;
+    height: 80px;
+    margin-top: 3px;
+  }
+}
+
+.settings-modal:hover {
+  color: var(--yellow);
+}
+
+.page-heading {
+  color: var(--text-color);
+  text-align: center;
+  font-size: 2.4rem;
+  font-weight: 600;
+  margin-bottom: 50px;
+}
+
+.settings-modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 28px;
+  font-size: 1.8rem;
+  color: var(--modal-text-color);
+}
+
+.settings-modal-content h6 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 0.8rem;
+  color: var(--yellow);
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid #ddd; /* Light separator line */
+  color: var(--modal-text-color);
+}
+
+.setting-item a img{
+  width: 20px;
+  height: 20px;
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item label {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.settings-link {
+  color: var(--modal-text-color);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.settings-link:hover {
+  color: var(--yellow); /* Default hover for settings links */
+}
+
+/* Specific layout for Privacy Policy link with icon */
+.settings-link-with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%; /* Ensure it takes full width to push icon to far right */
+}
+
+/* Override hover for the Privacy Policy text if no color change is desired */
+.settings-link-with-icon:hover,
+.settings-link-with-icon:hover span {
+  color: var(--modal-text-color); /* Keeps text color same as non-hovered state */
+  text-decoration: none; /* Ensure no underline appears on hover */
+}
+
+/* The icon itself does not need separate :hover styles as it's part of the link */
+/* The user's style for the image size is: */
+/* .setting-item a img { width: 20px; height: 20px; } */
+/* This will apply, no changes needed here for the icon itself. */
+
+/* Modal Toggle Switch Styles (Smaller) */
+.modal-toggle label {
+  width: 50px; /* Decreased width */
+  height: 25px; /* Cylindrical: Shorter */
+  background: var(--toggle-bg);
+  border-radius: 12px; /* Rounded ends */
+  border: 1px solid #000; /* Black border */
+  box-sizing: border-box; /* Ensure border is inside the width/height */
+}
+
+.modal-toggle label::after {
+  width: 18px; /* Smaller knob */
+  height: 18px;
+  top: 2px; /* Re-centered for 24px height label and 18px knob */
+  background: var(--toggle-knob);
+}
+
+/* Logic based on JS: darkModeToggleModal.checked = true for Dark Mode */
+.modal-toggle input#darkModeToggleModal:checked + label::after {
+  left: 3px; /* Dark Mode: Knob on the left */
+}
+
+.modal-toggle input#darkModeToggleModal:not(:checked) + label::after {
+  left: 25.75px; /* Light Mode: Knob on the right (44 - 18 - 3) */
+}
+
+.btn-primary {
+  background-color: var(--yellow);
+  color: var(--navy);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #fca833; /* Darker yellow */
+}
+
+.btn-primary:disabled {
+  background-color: #ccc;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Styles for the emotion emoji display */
+.emotion-emoji-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 150px;
+    height: 150px; /* Increased height to accommodate text */
+    background-color: var(--white);
+    padding: 10px;
+    border: 2px solid var(--navy);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Hide the video element used for face detection */
+#videoInput {
+    display: none;
+    /* You can also position it off-screen if 'display: none' causes issues with face-api.js */
+    /* position: absolute; */
+    /* top: -9999px; */
+    /* left: -9999px; */
+}
+
+.emotion-display {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 100;
+}
+
+#emotionText {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--navy);
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.emotion-emoji-display img {
+    width: 110px;
+    height: 110px;
+    margin-top: 5px;
+}
+
+.hamburger-menu {
+  display: none; /* Hidden by default, shown in media query */
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1001; /* Ensure it's above other navbar items */
+}
+
+.hamburger-menu img {
+  width: 30px; /* Adjust size as needed */
+  height: 30px;
+}
+
+@media (max-width: 700px) {
+  .navbar {
+    align-items: center; /* Align hamburger and controls */
+    padding: 15px 20px; /* Adjust padding */
+  }
+
+  .hamburger-menu {
+    display: block; /* Show hamburger on mobile */
+  }
+
+  .nav-links {
+    display: none; /* Hide original nav-links container by default on mobile */
+    flex-direction: column;
+    position: absolute;
+    top: 60px; /* Position below navbar, adjust as needed */
+    left: 0;
+    background-color: var(--bg-color);
+    width: 100%;
+    padding: 10px 0; /* Add some padding */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-top: 1px solid var(--yellow); 
+    z-index: 1000;
+  }
+
+  .nav-links.active-menu { /* Class to show the menu */
+    display: flex;
+  }
+
+  .nav-link {
+    font-size: 1.2rem; /* Adjusted font size for dropdown */
+    padding: 10px 20px; /* Make links easier to tap */
+    width: 100%;
+    box-sizing: border-box;
+    text-align: left;
+  }
+
+  .nav-link.active::after, .nav-link:not(.active):hover::after {
+    display: none; /* Remove underlines in dropdown */
+  }
+
+  .navbar-controls-right {
+    width: auto; /* Don't make controls full width if hamburger is present */
+    margin-top: 0; /* Reset margin */
+  }
+  
+  /* Keep other mobile styles for .toggle-switch, .settings-btn etc. */
+}

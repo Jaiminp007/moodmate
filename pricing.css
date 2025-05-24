@@ -1,0 +1,173 @@
+/* Pricing Page Styles */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  height: auto; /* Allow height to grow with content */
+  width: 100%; /* Ensure full width */
+  /* Set background only on html/body and ensure it's correct in both modes */
+  background-color: var(--bg-color) !important;
+  background: var(--bg-color) !important;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure light mode background is correctly applied */
+body.light-mode,
+html.light-mode {
+  background-color: var(--bg-color) !important;
+  background: var(--bg-color) !important;
+}
+
+/* New main content wrapper for pricing page */
+.main-content-pricing {
+  flex-grow: 1;
+  /* Ensure main content background is also correctly set and covers area */
+  background-color: var(--bg-color) !important;
+  background: var(--bg-color) !important;
+  box-shadow: none;
+  padding: 20px 40px 40px 40px; /* Based on about.css .main-content.about-page-content */
+  max-width: 900px; /* Based on about.css .main-content.about-page-content */
+  margin: 0 auto; /* Based on about.css .main-content.about-page-content */
+  text-align: left; /* Based on about.css .main-content.about-page-content */
+}
+
+.pricing-section {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 40px;
+  margin-top: 40px;
+  flex-wrap: nowrap; /* Always single row on desktop */
+  /* Background should be handled by main-content-pricing */
+  background: transparent !important; 
+}
+
+.pricing-card {
+  background: var(--bg-color);
+  border: 2px solid var(--yellow);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(27,38,59,0.10);
+  width: 320px;
+  min-width: 260px;
+  max-width: 95vw;
+  padding: 36px 28px 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.18s, box-shadow 0.18s;
+  position: relative;
+}
+
+.pricing-card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(252,191,73,0.18);
+  z-index: 2;
+}
+
+.pricing-card.featured {
+  background: var(--yellow);
+  color: var(--navy);
+  border: 2.5px solid var(--navy);
+}
+
+.pricing-card.featured .plan-title,
+.pricing-card.featured .plan-price,
+.pricing-card.featured ul,
+.pricing-card.featured ul li {
+  color: var(--navy) !important;
+}
+
+.pricing-card .plan-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--yellow);
+}
+
+.pricing-card.featured .plan-title {
+  color: var(--navy);
+}
+
+.pricing-card .plan-price {
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: var(--text-color);
+}
+
+.pricing-card.featured .plan-price {
+  color: var(--navy);
+}
+
+.pricing-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 0 0;
+  width: 100%;
+  color: inherit;
+  text-align: left;
+}
+
+.pricing-card ul li {
+  margin-bottom: 12px;
+  font-size: 1.08rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pricing-card .plan-cta {
+  margin-top: 28px;
+  padding: 12px 0;
+  width: 100%;
+  border-radius: 8px;
+  background: var(--yellow);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 1.1rem;
+  border: none;
+  cursor: not-allowed;
+  opacity: 0.85;
+  transition: background 0.2s, color 0.2s;
+}
+
+.pricing-card.featured .plan-cta {
+  background: var(--navy);
+  color: var(--yellow);
+  opacity: 1;
+}
+
+.pricing-card .plan-cta:active {
+  filter: brightness(0.95);
+}
+
+/* Responsive: stack vertically on mobile */
+@media (max-width: 900px) {
+  .pricing-section {
+    gap: 20px;
+  }
+  .pricing-card {
+    width: 90vw;
+    min-width: 220px;
+    padding: 28px 10px 24px 10px;
+  }
+}
+
+@media (max-width: 700px) {
+  .pricing-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: nowrap;
+  }
+  .pricing-card {
+    width: 98vw;
+    max-width: 400px;
+  }
+} 

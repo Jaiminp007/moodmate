@@ -1,0 +1,466 @@
+:root {
+  --navy: #1B263B;
+  --yellow: #FCBF49;
+  --white: #EDF6F9;
+  --font: 'Poppins', Arial, sans-serif;
+  --bg-color: var(--navy);
+  --text-color: var(--white);
+  --link-color: var(--yellow);
+  --table-border-color: rgba(237, 246, 249, 0.3);
+  --table-header-bg: rgba(237, 246, 249, 0.1);
+  --settings-icon-bg: var(--white);
+  --settings-icon-stroke: var(--navy);
+  --modal-bg-color: var(--white);
+  --modal-text-color: var(--navy);
+  --toggle-bg: var(--white);
+  --toggle-knob: var(--yellow);
+}
+
+body.light-mode {
+  --bg-color: var(--white);
+  --text-color: var(--navy);
+  --link-color: #E69500; /* Darker yellow for light mode links */
+  --table-border-color: rgba(27, 38, 59, 0.3);
+  --table-header-bg: rgba(27, 38, 59, 0.05);
+  --settings-icon-bg: var(--navy);
+  --settings-icon-stroke: var(--white);
+  --modal-bg-color: #f0f0f0;
+  --modal-text-color: var(--navy);
+  --toggle-bg: var(--navy);
+  --toggle-knob: var(--white);
+}
+
+html,
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100vh !important; /* Ensure at least viewport height */
+  height: auto !important; /* Allow height to grow with content */
+  width: 100% !important; /* Ensure full width */
+  /* Explicitly set background color and background shorthand for robustness */
+  background-color: var(--bg-color) !important;
+  background: var(--bg-color) !important;
+  color: var(--text-color);
+  font-family: var(--font);
+  box-sizing: border-box;
+  transition: background-color 0.3s, color 0.3s;
+  position: relative !important; /* Ensure proper stacking context */
+  z-index: 0 !important; /* Ensure body is at a base stacking level */
+}
+
+body {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Ensure light mode background is correctly applied and overrides default */
+body.light-mode,
+html.light-mode {
+  background-color: var(--bg-color) !important;
+  background: var(--bg-color) !important;
+  /* Potentially add overflow hidden to prevent content leakage */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+/* Main content wrapper for About page - ensure solid background and flex grow */
+.main-content-about {
+  flex-grow: 1 !important;
+  /* Ensure main content background is also correctly set and covers area */
+  background-color: var(--bg-color) !important;
+  background: var(--bg-color) !important;
+  box-shadow: none !important;
+  padding: 20px 40px 40px 40px !important; /* Keep original padding, add important */
+  max-width: 900px !important;
+  margin: 0 auto !important; /* Center the content */
+  text-align: left !important;
+  position: relative !important; /* Create a stacking context */
+  z-index: 1 !important; /* Ensure it's above the body background */
+}
+
+/* Ensure light mode background is correctly applied and overrides default */
+body.light-mode .main-content-about {
+  background-color: var(--bg-color) !important;
+  background: var(--bg-color) !important;
+}
+
+/* Navbar Styles (copied from other CSS for consistency) */
+.navbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 36px 56px 0 56px;
+  box-sizing: border-box;
+}
+
+.navbar-controls-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.nav-links {
+  display: flex;
+  gap: 60px;
+}
+
+.nav-link {
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 1.7rem;
+  position: relative;
+  padding-bottom: 4px;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--yellow);
+}
+
+.nav-link.active {
+  font-weight: 500;
+  color: var(--yellow);
+}
+
+.nav-link.active::after {
+  content: '';
+  display: block;
+  width: 120%;
+  height: 5px;
+  background: var(--yellow);
+  border-radius: 3px;
+  position: absolute;
+  left: 0%;
+  bottom: -5px;
+}
+
+.nav-link.active::after, .nav-link:not(.active):hover::after {
+  content: '';
+  display: block;
+  width: 120%;
+  height: 5px;
+  background: var(--yellow);
+  border-radius: 3px;
+  position: absolute;
+  left: 0%;
+  bottom: -5px;
+}
+
+.settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.settings-btn img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border-radius: 50%;
+}
+
+.about-header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--yellow);
+}
+
+.about-header h1 {
+  font-size: 2.2rem;
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.about-page-content section {
+  margin-bottom: 35px;
+}
+
+.about-page-content h2 {
+  font-size: 1.8rem;
+  color: var(--text-color);
+  margin-top: 0;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--link-color);
+}
+
+.about-page-content h3 {
+  font-size: 1.4rem;
+  color: var(--text-color);
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.about-page-content p,
+.about-page-content li {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-color);
+}
+
+.about-page-content ul, .about-page-content ol {
+  padding-left: 25px;
+  margin-bottom: 15px;
+}
+
+.about-page-content li {
+  margin-bottom: 8px;
+}
+
+.about-page-content strong {
+  font-weight: 600;
+  color: var(--yellow);
+}
+
+body.light-mode .about-page-content strong {
+ color: var(--link-color);
+}
+
+/* Table Styles */
+.about-page-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  margin-bottom: 20px;
+}
+
+.about-page-content th,
+.about-page-content td {
+  border: 1px solid var(--table-border-color);
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.about-page-content th {
+  background-color: var(--table-header-bg);
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Settings Modal Styles (copied for consistency) */
+.settings-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(27, 38, 59, 0.6);
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-modal-content {
+  background: var(--modal-bg-color);
+  color: var(--modal-text-color);
+  margin: auto;
+  padding: 32px 24px 24px 24px;
+  border-radius: 18px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(27,38,59,0.18);
+  text-align: center;
+}
+
+.close-modal {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--modal-text-color);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-modal:hover {
+  color: var(--yellow);
+}
+
+.settings-modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 28px;
+  font-size: 1.8rem;
+  color: var(--modal-text-color);
+}
+
+.settings-modal-content h6 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 0.8rem;
+  color: var(--yellow);
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid #ddd;
+  color: var(--modal-text-color);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item label {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.settings-link {
+  color: var(--modal-text-color);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.settings-link-with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.settings-link-with-icon:hover,
+.settings-link-with-icon:hover span {
+  color: var(--modal-text-color);
+  text-decoration: none;
+}
+
+.setting-item a img {
+  width: 20px;
+  height: 20px;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 80px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-switch input[type="checkbox"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch label {
+  display: block;
+  width: 50px;
+  height: 25px;
+  background: var(--toggle-bg);
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+  border: 1px solid #000;
+  box-sizing: border-box;
+}
+
+.toggle-switch label::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--toggle-knob);
+  border-radius: 50%;
+  transition: left 0.3s, background-color 0.3s;
+}
+
+.modal-toggle label::after {
+  /* Styles for modal toggle are more specific */
+}
+
+.modal-toggle input#darkModeToggleModal:checked + label::after {
+  left: 3px;
+}
+
+.modal-toggle input#darkModeToggleModal:not(:checked) + label::after {
+  left: 27px;
+}
+
+.btn-primary {
+  background-color: var(--yellow);
+  color: var(--navy);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #fca833;
+}
+
+.btn-primary:disabled {
+  background-color: #ccc;
+  color: #888;
+  cursor: not-allowed;
+}
+
+@media (max-width: 700px) {
+  .main-content.about-page-content {
+    padding: 15px 20px 20px 20px; /* Reduced padding */
+  }
+
+  .about-header h1 {
+    font-size: 1.8rem; /* Smaller main heading */
+  }
+
+  .about-page-content h2 {
+    font-size: 1.4rem; /* Smaller section headings */
+    margin-bottom: 10px;
+  }
+
+  .about-page-content h3 {
+    font-size: 1.2rem; /* Smaller sub-headings */
+    margin-bottom: 8px;
+  }
+
+  .about-page-content p,
+  .about-page-content li {
+    font-size: 0.9rem; /* Smaller paragraph and list text */
+    line-height: 1.6;
+  }
+
+  .about-page-content ul, .about-page-content ol {
+    padding-left: 20px; /* Reduced padding for lists */
+  }
+
+  .about-page-content table {
+    font-size: 0.85rem; /* Smaller text in tables */
+  }
+
+  .about-page-content th,
+  .about-page-content td {
+    padding: 8px 10px; /* Reduced padding in table cells */
+  }
+  
+  /* For very wide tables, allow horizontal scrolling */
+  .table-container {
+    overflow-x: auto;
+    margin-left: -20px; /* Counteract padding for full-bleed scroll */
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+} 

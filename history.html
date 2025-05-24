@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>History - Therapist App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="history.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-links" id="nav-links-menu">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="history.html" class="nav-link active">History</a>
+      <a href="customise.html" class="nav-link">Customise</a>
+      <a href="pricing.html" class="nav-link">Pricing</a>
+      <a href="about.html" class="nav-link">About</a>
+    </div>
+    <div class="navbar-controls-right">
+      <!-- <button class="delete-btn">Delete Data</button> -->
+      <button class="settings-btn" id="settings-btn" aria-label="Settings">
+        <img src="assets/gear.png" alt="Settings Icon">
+      </button>
+    </div>
+  </nav>
+  <main class="main-content">
+    <h1 class="page-heading">Emotion Tracker</h1>
+    <div class="content-wrapper">
+      <div class="left-column-wrapper">
+        <div class="left-column">
+          <div class="top-box">
+            <h2>Mood Boost Activities</h2>
+            <div class="activities-list">
+              <p>Take a 5-minute walk</p>
+              <p>Call a friend</p>
+              <p>Listen to your favorite song</p>
+              <!-- Add more activities as needed -->
+            </div>
+          </div>
+        </div>
+        <div class="left-column">
+          <div class="bottom-box">
+            <h2>Past Conversations</h2>
+            <div class="conversation-list">
+              <!-- Remove the placeholder conversation item -->
+              <!--
+              <div class="conversation-item">
+                <p>Timestamp: 2023-10-01 14:30</p>
+                <p>Mood: 😀</p>
+              </div>
+              -->
+              <!-- Add more conversation items as needed -->
+            </div>
+            <button id="view-convos-btn" class="btn-primary" style="margin-top: 10px;">View All Conversations</button>
+          </div>
+        </div>
+      </div>
+      <div class="right-column">
+        <h2>Emotion Line Chart</h2>
+        <canvas id="emotion-chart" width="400" height="200">Emotion Line Chart Placeholder</canvas>
+      </div>
+    </div>
+  </main>
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="settings-modal">
+    <div class="settings-modal-content">
+      <span class="close-modal" id="close-settings">&times;</span>
+      <h2>Settings</h2>
+      <div class="setting-item">
+        <label for="darkModeToggleModal">Dark Mode</label>
+        <div class="toggle-switch modal-toggle" id="modal-theme-toggle-container">
+          <input type="checkbox" id="darkModeToggleModal">
+          <label for="darkModeToggleModal"></label>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Notifications</label>
+        <button class="btn-primary" disabled>Manage</button>
+      </div>
+      <div class="setting-item">
+        <label>Account</label>
+        <button class="btn-primary" disabled>Edit Profile</button>
+      </div>
+      <div class="setting-item">
+        <a href="privacy.html" class="settings-link settings-link-with-icon">
+          <span>Privacy Policy</span>
+          <img src="assets/external-link.png" alt="External link icon">
+        </a>
+      </div>
+      <h6>This app is not an official therapist, but a supportive companion meant to offer comfort—not professional mental health advice.</h6>
+    </div>
+  </div>
+  <!-- Conversation History Modal -->
+  <div id="convo-modal" class="settings-modal">
+    <div class="settings-modal-content" style="max-width: 700px;">
+      <span class="close-modal" id="close-convo-modal">&times;</span>
+      <h2>Past AI Conversations</h2>
+      <div id="convo-modal-content" style="max-height: 400px; overflow-y: auto;"></div>
+    </div>
+  </div>
+  <script src="history.js"></script>
+</body>
+</html> 

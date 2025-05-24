@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Customise - Therapist App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="customise.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-links" id="nav-links-menu">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="history.html" class="nav-link">History</a>
+      <a href="customise.html" class="nav-link active">Customise</a>
+      <a href="pricing.html" class="nav-link">Pricing</a>
+      <a href="about.html" class="nav-link">About</a>
+    </div>
+    <div class="navbar-controls-right">
+      <button class="delete-btn">Delete Data</button> 
+      <button class="settings-btn" id="settings-btn" aria-label="Settings">
+        <img src="assets/gear.png" alt="Settings Icon">
+      </button>
+    </div>
+  </nav>
+  <main class="main-content">
+    <h1 class="page-heading">Customise Your Experience</h1>
+    
+    <div class="customise-section">
+      <h2>Response Preferences</h2>
+      <div class="setting-item-custom">
+        <label for="responseLength">Response Length:</label>
+        <select id="responseLength" name="responseLength">
+          <option value="short">Short</option>
+          <option value="detailed">Detailed</option>
+        </select>
+      </div>
+      <div class="setting-item-custom">
+        <label for="triggerDetection">Trigger Word Detection:</label>
+        <div class="toggle-switch" id="triggerDetectionToggle">
+          <input type="checkbox" id="triggerDetection">
+          <label for="triggerDetection"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="customise-section">
+      <h2>Mood Tracking Preferences</h2>
+      <div class="setting-item-custom">
+        <label for="moodLogging">Enable Mood Logging:</label>
+        <div class="toggle-switch" id="moodLoggingToggle">
+          <input type="checkbox" id="moodLogging">
+          <label for="moodLogging"></label>
+        </div>
+      </div>
+      <div class="setting-item-custom">
+        <label for="dataRetention">Data Retention:</label>
+        <select id="dataRetention" name="dataRetention">
+          <option value="7">7 Days</option>
+          <option value="30">30 Days</option>
+          <option value="session">Until Tab Close</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="customise-section">
+      <h2>Tracking Preferences</h2>
+      <div class="setting-item-custom">
+        <label for="faceTracking">Enable Face Expression Tracking:</label>
+        <div class="toggle-switch" id="faceTrackingToggle">
+          <input type="checkbox" id="faceTracking">
+          <label for="faceTracking"></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="customise-section">
+      <h2>Optional Preferences</h2>
+      <div class="setting-item-custom">
+        <label for="preferredName">Preferred Name:</label>
+        <input type="text" id="preferredName" name="preferredName" placeholder="Enter your preferred name">
+      </div>
+    </div>
+
+  </main>
+  <!-- Settings Modal (copied from history.html) -->
+  <div id="settings-modal" class="settings-modal">
+    <div class="settings-modal-content">
+      <span class="close-modal" id="close-settings">&times;</span>
+      <h2>Settings</h2>
+      <div class="setting-item">
+        <label for="darkModeToggleModal">Dark Mode</label>
+        <div class="toggle-switch modal-toggle" id="modal-theme-toggle-container">
+          <input type="checkbox" id="darkModeToggleModal">
+          <label for="darkModeToggleModal"></label>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Notifications</label>
+        <button class="btn-primary" disabled>Manage</button>
+      </div>
+      <div class="setting-item">
+        <label>Account</label>
+        <button class="btn-primary" disabled>Edit Profile</button>
+      </div>
+      <div class="setting-item">
+        <a href="privacy.html" class="settings-link settings-link-with-icon">
+          <span>Privacy Policy</span>
+          <img src="assets/external-link.png" alt="External link icon">
+        </a>
+      </div>
+      <h6>This app is not an official therapist, but a supportive companion meant to offer comfort—not professional mental health advice.</h6>
+    </div>
+  </div>
+  <script src="customise.js"></script>
+</body>
+</html> 

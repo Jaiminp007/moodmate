@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personalised Therapist - Home</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- face-api.js CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <button class="hamburger-menu" id="hamburger-menu" aria-label="Toggle menu" aria-expanded="false">
+      <img src="assets/menu.png" alt="Menu">
+    </button>
+    <div class="nav-links" id="nav-links-menu">
+      <a href="index.html" class="nav-link active">Home</a>
+      <a href="history.html" class="nav-link">History</a>
+      <a href="customise.html" class="nav-link">Customise</a>
+      <a href="pricing.html" class="nav-link">Pricing</a>
+      <a href="about.html" class="nav-link">About</a>
+    </div>
+    <div class="navbar-controls-right">
+      <div class="toggle-switch">
+        <input type="checkbox" id="theme-toggle">
+        <label for="theme-toggle"></label>
+      </div>
+      <button class="settings-btn" id="settings-btn" aria-label="Settings">
+        <img src="assets/gear.png" alt="Settings Icon">
+      </button>
+    </div>
+  </nav>
+  <main class="main-content">
+    <h1 class="page-heading">Your Personalised Therapist</h1>
+    <div class="bubble-group">
+      <div class="main-bubble" id="start-bubble">
+        <span>Tap Here to Start</span>
+      </div>
+      <!-- Container for the four listening bubbles -->
+      <div class="listening-bubbles" id="listening-bubbles">
+          <div class="listening-bubble"></div>
+          <div class="listening-bubble"></div>
+          <div class="listening-bubble"></div>
+          <div class="listening-bubble"></div>
+      </div>
+      <div class="bubble small-bubble-1"></div>
+      <div class="bubble small-bubble-2"></div>
+    </div>
+  </main>
+  <!-- Video element for face detection (will be hidden via CSS) -->
+  <video id="videoInput" width="320" height="240" muted autoplay playsinline style="display: none; position: absolute; top: 0; left: 0;"></video>
+  <!-- Emoji display -->
+  <div class="emotion-display">
+    <div class="emotion-emoji-display">
+      <span id="emotionText">Neutral</span>
+      <img id="emotionEmoji" src="assets/neutral.png" alt="Emotion Emoji">
+    </div>
+  </div>
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="settings-modal">
+    <div class="settings-modal-content">
+      <span class="close-modal" id="close-settings">&times;</span>
+      <h2>Settings</h2>
+      <div class="setting-item">
+        <label for="darkModeToggleModal">Dark Mode</label>
+        <div class="toggle-switch modal-toggle" id="modal-theme-toggle-container">
+          <input type="checkbox" id="darkModeToggleModal">
+          <label for="darkModeToggleModal"></label>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Notifications</label>
+        <button class="btn-primary" disabled>Manage</button>
+      </div>
+      <div class="setting-item">
+        <label>Account</label>
+        <button class="btn-primary" disabled>Edit Profile</button>
+      </div>
+      <div class="setting-item">
+        <a href="privacy.html" class="settings-link settings-link-with-icon">
+          <span>Privacy Policy</span>
+          <img src="assets/external-link.png" alt="External link icon" class="external-link-icon">
+        </a>
+      </div>
+      <h6>This app is not an official therapist, but a supportive companion meant to offer comfort—not professional mental health advice.</h6>
+    </div>
+  </div>
+  <script src="home.js"></script>
+</body>
+</html>

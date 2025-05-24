@@ -1,0 +1,469 @@
+:root {
+  --navy: #1B263B;
+  --yellow: #FCBF49;
+  --white: #EDF6F9;
+  --font: 'Poppins', Arial, sans-serif;
+
+  /* Default Dark Theme Colors */
+  --bg-color: var(--navy);
+  --text-color: var(--white);
+  --bubble-text-color: #333;
+  --settings-icon-bg: var(--white);
+  --settings-icon-stroke: var(--navy);
+  --modal-bg-color: var(--white);
+  --modal-text-color: var(--navy);
+  --toggle-bg: var(--white);
+  --toggle-knob: var(--yellow);
+}
+
+body.light-mode {
+   /* Light Theme Color Overrides */
+  --bg-color: var(--white);
+  --text-color: var(--navy);
+  /* --bubble-text-color remains #333 as it's on a yellow background */
+  --settings-icon-bg: var(--navy);
+  --settings-icon-stroke: var(--white);
+  --modal-bg-color: #f0f0f0; /* Slightly off-white for modal in light mode */
+  --modal-text-color: var(--navy);
+  --toggle-bg: var(--navy);
+  --toggle-knob: var(--white);
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font);
+  box-sizing: border-box;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 36px 56px 0 56px;
+  box-sizing: border-box;
+}
+
+.navbar-controls-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.nav-links {
+  display: flex;
+  gap: 60px;
+}
+
+.nav-link {
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 1.7rem;
+  position: relative;
+  padding-bottom: 4px;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--yellow);
+}
+
+.nav-link.active {
+  font-weight: 500;
+  color: var(--yellow);
+}
+
+.nav-link.active::after {
+  content: '';
+  display: block;
+  width: 120%;
+  height: 5px;
+  background: var(--yellow);
+  border-radius: 3px;
+  position: absolute;
+  left: 0%;
+  bottom: -5px;
+}
+
+.nav-link.active::after, .nav-link:not(.active):hover::after {
+  content: '';
+  display: block;
+  width: 120%; /* Same as active link's underline */
+  height: 5px;  /* Same as active link's underline */
+  background: var(--yellow);
+  border-radius: 3px; /* Same as active link's underline */
+  position: absolute;
+  left: 0%; /* Same as active link's underline */
+  bottom: -5px; /* Same as active link's underline */
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-right: 20px;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+}
+
+.settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.settings-btn img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  background: transparent; /* Remove background */
+  border-radius: 50%;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.content-wrapper {
+  display: flex;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+  justify-content: space-between;
+}
+
+.left-column-wrapper {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  margin-right: 40px;
+}
+
+.left-column {
+  width: 100%;
+  padding: 20px;
+  background-color: var(--white);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  color: var(--navy);
+}
+
+/* Specific style for the first (upper) box */
+.left-column:first-child {
+  background-color: var(--yellow);
+}
+
+.right-column {
+  width: 50%;
+  height: 88%;
+  padding: 20px;
+  background-color: var(--white);
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  color: var(--navy);
+}
+
+.top-box, .bottom-box {
+  margin-bottom: 20px;
+}
+
+.activities-list, .conversation-list {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 10px;
+  color: var(--navy);
+}
+
+.conversation-item {
+  margin-bottom: 10px;
+}
+
+h2 {
+  color: var(--navy);
+  margin-top: 0;
+}
+
+.page-heading {
+  color: var(--text-color);
+}
+
+/* Light mode specific styles */
+body.light-mode .left-column {
+  background-color: var(--navy);
+  color: var(--white);
+}
+
+body.light-mode .left-column:first-child {
+  background-color: var(--yellow);
+  color: var(--navy);
+}
+
+body.light-mode .right-column {
+  background-color: var(--navy);
+  color: var(--white);
+}
+
+body.light-mode h2 {
+  color: inherit;
+}
+
+body.light-mode .activities-list,
+body.light-mode .conversation-list {
+  color: inherit;
+}
+
+/* Ensure page heading remains visible in light mode */
+body.light-mode .page-heading {
+  color: var(--text-color);
+}
+
+@media (max-width: 700px) {
+  .content-wrapper {
+    flex-direction: column;
+    padding: 10px;
+  }
+  .left-column-wrapper {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 20px;
+  }
+  .right-column {
+    width: 100%;
+    height: auto;
+  }
+  .left-column {
+    padding: 15px;
+  }
+  .left-column h2, .right-column h2 {
+    font-size: 1.2rem;
+  }
+  .activities-list p, .conversation-item p {
+    font-size: 0.9rem;
+  }
+  .delete-btn {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+    margin-right: 10px;
+  }
+  #emotion-chart {
+    max-height: 250px;
+  }
+}
+
+/* Settings Modal Styles */
+.settings-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(27, 38, 59, 0.6);
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-modal-content {
+  background: var(--modal-bg-color);
+  color: var(--modal-text-color);
+  margin: auto;
+  padding: 32px 24px 24px 24px;
+  border-radius: 18px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(27,38,59,0.18);
+  text-align: center;
+}
+
+.close-modal {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--modal-text-color);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-modal:hover {
+  color: var(--yellow);
+}
+
+.settings-modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 28px;
+  font-size: 1.8rem;
+  color: var(--modal-text-color);
+}
+
+.settings-modal-content h6 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 0.8rem;
+  color: var(--yellow);
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid #ddd;
+  color: var(--modal-text-color);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item label {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.settings-link {
+  color: var(--modal-text-color);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.settings-link-with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.settings-link-with-icon:hover,
+.settings-link-with-icon:hover span {
+  color: var(--modal-text-color);
+  text-decoration: none;
+}
+
+.setting-item a img {
+  width: 20px;
+  height: 20px;
+}
+
+/* Modal Toggle Switch Styles */
+.modal-toggle label {
+  width: 50px;
+  height: 25px;
+  background: var(--toggle-bg);
+  border-radius: 12px;
+  border: 1px solid #000;
+  box-sizing: border-box;
+}
+
+.modal-toggle label::after {
+  width: 18px;
+  height: 18px;
+  top: 2px;
+  background: var(--toggle-knob);
+}
+
+/* Dark Mode: Knob on the left */
+.modal-toggle input#darkModeToggleModal:checked + label::after {
+  left: 3px;
+}
+
+/* Light Mode: Knob on the right */
+.modal-toggle input#darkModeToggleModal:not(:checked) + label::after {
+  left: 27px;
+}
+
+.btn-primary {
+  background-color: var(--yellow);
+  color: var(--navy);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #fca833;
+}
+
+.btn-primary:disabled {
+  background-color: #ccc;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Re-add toggle switch styles for the modal */
+.toggle-switch {
+  position: relative;
+  width: 80px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-switch input[type="checkbox"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch label {
+  display: block;
+  width: 50px;
+  height: 25px;
+  background: var(--toggle-bg);
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+  border: 1px solid #000;
+  box-sizing: border-box;
+}
+
+.toggle-switch label::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--toggle-knob);
+  border-radius: 50%;
+  transition: left 0.3s, background-color 0.3s;
+} 

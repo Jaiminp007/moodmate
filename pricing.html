@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Pricing - MoodMate</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="about.css">
+  <link rel="stylesheet" href="pricing.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-links" id="nav-links-menu">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="history.html" class="nav-link">History</a>
+      <a href="customise.html" class="nav-link">Customise</a>
+      <a href="pricing.html" class="nav-link active">Pricing</a>
+      <a href="about.html" class="nav-link">About</a>
+    </div>
+    <div class="navbar-controls-right">
+      <button class="settings-btn" id="settings-btn" aria-label="Settings">
+        <img src="assets/gear.png" alt="Settings Icon">
+      </button>
+    </div>
+  </nav>
+  <main class="main-content-pricing">
+    <header class="about-header">
+      <h1>Choose Your MoodMate Plan</h1>
+    </header>
+    <section>
+      <div class="pricing-section">
+        <!-- Free Tier -->
+        <div class="pricing-card">
+          <div class="plan-title">Free</div>
+          <div class="plan-price">$0</div>
+          <ul>
+            <li>✅ 🎭 Facial Emotion Detection</li>
+            <li>✅ 🎤 Voice-to-Voice Conversations</li>
+            <li>✅ 🧠 Emotion-Aware AI Responses</li>
+            <li>❌ 📝 Voice Journaling</li>
+            <li>❌ 🎚️ Custom AI Tones</li>
+            <li>❌ 📤 Export Mood History</li>
+            <li>❌ 📈 AI Journal Summaries</li>
+            <li>❌ 🧪 Early Access to New Features</li>
+          </ul>
+          <button class="plan-cta" >Get Started</button>
+        </div>
+        <!-- Plus Tier (Featured) -->
+        <div class="pricing-card featured">
+          <div class="plan-title">Plus</div>
+          <div class="plan-price">$4.99/mo</div>
+          <ul>
+            <li>✅ 🎭 Facial Emotion Detection</li>
+            <li>✅ 🎤 Voice-to-Voice Conversations</li>
+            <li>✅ 🧠 Emotion-Aware AI Responses</li>
+            <li>✅ 📝 Voice Journaling</li>
+            <li>✅ 🎚️ Custom AI Tones</li>
+            <li>❌ 📤 Export Mood History</li>
+            <li>❌ 📈 AI Journal Summaries</li>
+            <li>❌ 🧪 Early Access to New Features</li>
+          </ul>
+          <button class="plan-cta" disabled>Coming Soon</button>
+        </div>
+        <!-- Pro Tier -->
+        <div class="pricing-card">
+          <div class="plan-title">Pro</div>
+          <div class="plan-price">$9.99/mo</div>
+          <ul>
+            <li>✅ 🎭 Facial Emotion Detection</li>
+            <li>✅ 🎤 Voice-to-Voice Conversations</li>
+            <li>✅ 🧠 Emotion-Aware AI Responses</li>
+            <li>✅ 📝 Voice Journaling</li>
+            <li>✅ 🎚️ Custom AI Tones</li>
+            <li>✅ 📤 Export Mood History</li>
+            <li>✅ 📈 AI Journal Summaries</li>
+            <li>✅ 🧪 Early Access to New Features</li>
+          </ul>
+          <button class="plan-cta" disabled>Coming Soon</button>
+        </div>
+      </div>
+      <p style="text-align:center; margin-top: 40px; color: var(--text-color); font-size: 1.1rem;">No sign-up required for Free. Paid plans are coming soon!</p>
+    </section>
+  </main>
+  <!-- Settings Modal (copied from about.html) -->
+  <div id="settings-modal" class="settings-modal">
+    <div class="settings-modal-content">
+      <span class="close-modal" id="close-settings">&times;</span>
+      <h2>Settings</h2>
+      <div class="setting-item">
+        <label for="darkModeToggleModal">Dark Mode</label>
+        <div class="toggle-switch modal-toggle" id="modal-theme-toggle-container">
+          <input type="checkbox" id="darkModeToggleModal">
+          <label for="darkModeToggleModal"></label>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Notifications</label>
+        <button class="btn-primary" disabled>Manage</button>
+      </div>
+      <div class="setting-item">
+        <label>Account</label>
+        <button class="btn-primary" disabled>Edit Profile</button>
+      </div>
+      <div class="setting-item">
+        <a href="privacy.html" class="settings-link settings-link-with-icon">
+          <span>Privacy Policy</span>
+          <img src="assets/external-link.png" alt="External link icon" class="external-link-icon">
+        </a>
+      </div>
+      <h6>This app is not an official therapist, but a supportive companion meant to offer comfort—not professional mental health advice.</h6>
+    </div>
+  </div>
+  <script src="about.js"></script>
+</body>
+</html> 

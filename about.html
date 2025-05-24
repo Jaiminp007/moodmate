@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>About MoodMate - Therapist App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="about.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-links" id="nav-links-menu">
+      <a href="index.html" class="nav-link">Home</a>
+      <a href="history.html" class="nav-link">History</a>
+      <a href="customise.html" class="nav-link">Customise</a>
+      <a href="pricing.html" class="nav-link">Pricing</a>
+      <a href="about.html" class="nav-link active">About</a>
+    </div>
+    <div class="navbar-controls-right">
+      <!-- Removed delete button, keeping settings consistent with other pages -->
+      <button class="settings-btn" id="settings-btn" aria-label="Settings">
+        <img src="assets/gear.png" alt="Settings Icon">
+      </button>
+    </div>
+  </nav>
+
+  <main class="main-content-about">
+    <header class="about-header">
+      <h1>MoodMate – Your Voice-Activated AI Emotional Companion</h1>
+    </header>
+
+    <section id="overview">
+      <h2>🎯 Project Overview</h2>
+      <p><strong>MoodMate</strong> is a privacy-first, voice-only AI assistant that uses real-time facial emotion recognition and conversational AI to offer emotional support, guidance, and companionship. It runs in the browser, requires no sign-up, and stores no raw media — only emotion insights locally for users who want to track their mood trends.</p>
+    </section>
+
+    <section id="problem">
+      <h2>🔍 Problem Statement</h2>
+      <p>Millions of people experience stress, anxiety, or low moods but hesitate to seek professional help due to stigma, cost, or accessibility. While chatbots exist, they often lack empathy and context-awareness.</p>
+    </section>
+
+    <section id="goal">
+      <h2>🌟 Goal</h2>
+      <p>To build an emotionally aware, voice-driven AI that:</p>
+      <ul>
+        <li>Detects a user's current emotional state using facial cues</li>
+        <li>Responds via voice to uplift, support, or guide the user</li>
+        <li>Offers anonymous, lightweight mood tracking via local storage</li>
+        <li>Encourages emotional expression in a safe, user-controlled space</li>
+      </ul>
+    </section>
+
+    <section id="features">
+      <h2>🧩 Key Features</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>🎭 Facial Emotion Detection</td>
+            <td>Detects emotions like sadness, anger, happiness, fear, etc., in real-time using the camera.</td>
+          </tr>
+          <tr>
+            <td>🎤 Voice-Only Interaction</td>
+            <td>Uses speech-to-text and text-to-speech for fully voice-based conversations.</td>
+          </tr>
+          <tr>
+            <td>🧠 Emotion-Based AI Responses</td>
+            <td>Adjusts tone and responses based on the detected emotional state.</td>
+          </tr>
+          <tr>
+            <td>📊 Local Mood Logging</td>
+            <td>Saves emotion logs (no images or audio) to browser's LocalStorage.</td>
+          </tr>
+          <tr>
+            <td>🛡️ Privacy-First Design</td>
+            <td>No facial data, audio, or video is stored or sent to a server.</td>
+          </tr>
+          <tr>
+            <td>👤 Optional Personalization</td>
+            <td>Allows users to optionally save preferences locally without sign-up.</td>
+          </tr>
+          <tr>
+            <td>📈 Mood Trends (Optional UI)</td>
+            <td>Shows emotion trends over time through a simple chart/graph.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="architecture">
+      <h2>🏗️ System Architecture</h2>
+      <h3>Frontend:</h3>
+      <ul>
+        <li>React.js (or plain HTML/JS)</li>
+        <li>FaceAPI.js or TensorFlow.js (for facial emotion detection)</li>
+        <li>Web Speech API (for voice input)</li>
+        <li>Google TTS / ResponsiveVoice.js (for voice output)</li>
+        <li>LocalStorage (for emotion logs and settings)</li>
+      </ul>
+      <h3>Backend:</h3>
+      <p>None required (unless adding sign-up / cloud storage later)</p>
+      <h3>Workflow:</h3>
+      <ol>
+        <li>User lands on site → camera + mic permission requested.</li>
+        <li>AI starts listening and watching (with permission).</li>
+        <li>Emotion detected via face in real-time.</li>
+        <li>AI responds with appropriate tone using TTS.</li>
+        <li>Detected emotions logged in LocalStorage (if user agrees).</li>
+        <li>All data wiped on tab close unless saved locally.</li>
+      </ol>
+    </section>
+
+    <section id="emotion-logic">
+      <h2>🧠 Emotion Detection Logic Example</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Detected Emotion</th>
+            <th>Response Style</th>
+            <th>Example AI Response</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Sadness</td>
+            <td>Supportive & Calm</td>
+            <td>"It's okay to feel down sometimes. Want to talk about it?"</td>
+          </tr>
+          <tr>
+            <td>Anger</td>
+            <td>Calming & Grounded</td>
+            <td>"Let's take a deep breath together. What triggered this feeling?"</td>
+          </tr>
+          <tr>
+            <td>Happiness</td>
+            <td>Encouraging</td>
+            <td>"You seem happy! That's amazing. Want to share what made your day?"</td>
+          </tr>
+          <tr>
+            <td>Fear</td>
+            <td>Reassuring</td>
+            <td>"You're safe here. Would you like some grounding exercises?"</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="privacy-ethics">
+      <h2>🔐 Privacy & Ethics Considerations</h2>
+      <ul>
+        <li>✅ No raw image/audio/video stored or transmitted</li>
+        <li>✅ All processing done in-browser</li>
+        <li>✅ Mood logs optional and stored only in LocalStorage</li>
+        <li>✅ Camera/mic auto-disabled on exit</li>
+        <li>✅ Clear privacy notice shown before use</li>
+        <li>⚠️ Include disclaimer: Not a licensed therapist, for emotional support only</li>
+      </ul>
+    </section>
+
+    <section id="future-extensions">
+      <h2>🚀 Future Extensions</h2>
+      <ul>
+        <li>Add journaling feature (voice-to-text diary)</li>
+        <li>Suggest breathing/meditation exercises</li>
+        <li>Connect to mental health helplines in case of distress</li>
+        <li>Introduce optional sign-up for cloud backup</li>
+        <li>Build a simple mobile app version with React Native + Expo</li>
+      </ul>
+    </section>
+
+    <section id="tech-stack">
+      <h2>🧠 Possible Tech Stack</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Tech</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>UI</td><td>HTML/CSS/JS or React</td></tr>
+          <tr><td>Emotion Detection</td><td>FaceAPI.js or TensorFlow.js</td></tr>
+          <tr><td>Voice Input</td><td>Web Speech API</td></tr>
+          <tr><td>Voice Output</td><td>Google TTS, ResponsiveVoice.js</td></tr>
+          <tr><td>Local Storage</td><td>Asyncstorage if possible</td></tr>
+          <tr><td>Charts</td><td>Chart.js or Recharts (for mood trends)</td></tr>
+          <tr><td>Optional Backend</td><td>Flask / Firebase (for login features in future)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="mvp">
+      <h2>🏁 MVP Plan (Minimal Viable Product)</h2>
+      <ol>
+        <li>Set up website with a clean UI</li>
+        <li>Enable mic and camera access with permission prompt</li>
+        <li>Implement live facial emotion detection (FaceAPI.js)</li>
+        <li>Connect speech-to-text and TTS</li>
+        <li>Build emotion-response logic</li>
+        <li>Store emotions in LocalStorage with timestamps</li>
+        <li>Show last 7 days of emotion history in simple chart</li>
+      </ol>
+    </section>
+
+  </main>
+
+  <!-- Settings Modal (copied for consistency) -->
+  <div id="settings-modal" class="settings-modal">
+    <div class="settings-modal-content">
+      <span class="close-modal" id="close-settings">&times;</span>
+      <h2>Settings</h2>
+      <div class="setting-item">
+        <label for="darkModeToggleModal">Dark Mode</label>
+        <div class="toggle-switch modal-toggle" id="modal-theme-toggle-container">
+          <input type="checkbox" id="darkModeToggleModal">
+          <label for="darkModeToggleModal"></label>
+        </div>
+      </div>
+      <div class="setting-item">
+        <label>Notifications</label>
+        <button class="btn-primary" disabled>Manage</button>
+      </div>
+      <div class="setting-item">
+        <label>Account</label>
+        <button class="btn-primary" disabled>Edit Profile</button>
+      </div>
+      <div class="setting-item">
+        <a href="privacy.html" class="settings-link settings-link-with-icon">
+          <span>Privacy Policy</span>
+          <img src="assets/external-link.png" alt="External link icon">
+        </a>
+      </div>
+      <h6>This app is not an official therapist, but a supportive companion meant to offer comfort—not professional mental health advice.</h6>
+    </div>
+  </div>
+
+  <script src="about.js"></script>
+</body>
+</html> 

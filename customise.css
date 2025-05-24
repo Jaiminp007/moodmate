@@ -1,0 +1,591 @@
+:root {
+  --navy: #1B263B;
+  --yellow: #FCBF49;
+  --white: #EDF6F9;
+  --font: 'Poppins', Arial, sans-serif;
+
+  /* Default Dark Theme Colors */
+  --bg-color: var(--navy);
+  --text-color: var(--white);
+  --settings-icon-bg: var(--white);
+  --settings-icon-stroke: var(--navy);
+  --modal-bg-color: var(--white);
+  --modal-text-color: var(--navy);
+  --toggle-bg: var(--white);
+  --toggle-knob: var(--yellow);
+
+  /* Customise Page Specific Styles */
+  --customise-section-bg: rgba(var(--white-rgb, 237, 246, 249), 0.1);
+  --customise-section-bg-light: rgba(var(--navy-rgb, 27, 38, 59), 0.05);
+  --customise-section-border: 1px solid var(--yellow);
+  --customise-section-text: var(--text-color);
+  --customise-section-text-light: var(--text-color);
+  --customise-section-h2: 1.5rem;
+  --customise-section-h2-light: 1.5rem;
+  --customise-section-h2-border: 1px solid var(--yellow);
+  --customise-section-h2-padding: 10px;
+  --customise-section-padding: 20px;
+  --customise-section-radius: 10px;
+  --customise-section-margin-bottom: 25px;
+  --customise-section-width: 100%;
+  --customise-section-max-width: 700px;
+  --customise-section-shadow: 0 2px 10px rgba(0,0,0,0.05);
+
+  /* Customise Page Section Box Styles */
+  --customise-section-bg-dark-default: var(--white);
+  --customise-section-bg-dark-hover: var(--yellow);
+  --customise-section-text-dark-default: var(--navy);
+  --customise-section-text-dark-hover: var(--navy);
+
+  --customise-section-bg-light-default: var(--navy);
+  --customise-section-bg-light-hover: var(--yellow);
+  --customise-section-text-light-default: var(--white);
+  --customise-section-text-light-hover: var(--navy);
+
+  /* Ensure :root variables for RGB are defined if not already */
+  --white-rgb: 237, 246, 249;
+  --navy-rgb: 27, 38, 59;
+
+  /* New toggle colors */
+  --toggle-general-on-bg: #28a745; /* Green for ON */
+  --toggle-general-off-bg: #cccccc; /* Grey for OFF */
+}
+
+body.light-mode {
+  --bg-color: var(--white);
+  --text-color: var(--navy);
+  --settings-icon-bg: var(--navy);
+  --settings-icon-stroke: var(--white);
+  --modal-bg-color: #f0f0f0;
+  --modal-text-color: var(--navy);
+  --toggle-bg: var(--navy);
+  --toggle-knob: var(--white);
+  --customise-section-text: var(--navy);
+  --customise-section-text-light: var(--navy);
+  --toggle-general-on-bg: #28a745; /* Green for ON - same in light mode */
+  --toggle-general-off-bg: #B0B0B0; /* Slightly darker Grey for OFF in light mode for contrast */
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font);
+  box-sizing: border-box;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 36px 56px 0 56px;
+  box-sizing: border-box;
+}
+
+.navbar-controls-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.nav-links {
+  display: flex;
+  gap: 60px;
+}
+
+.nav-link {
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 1.7rem;
+  position: relative;
+  padding-bottom: 4px;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--yellow);
+}
+
+.nav-link.active {
+  font-weight: 500;
+  color: var(--yellow);
+}
+
+.nav-link.active::after {
+  content: '';
+  display: block;
+  width: 120%;
+  height: 5px;
+  background: var(--yellow);
+  border-radius: 3px;
+  position: absolute;
+  left: 0%;
+  bottom: -5px;
+}
+
+.nav-link.active::after, .nav-link:not(.active):hover::after {
+  content: '';
+  display: block;
+  width: 120%;
+  height: 5px;
+  background: var(--yellow);
+  border-radius: 3px;
+  position: absolute;
+  left: 0%;
+  bottom: -5px;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-right: 20px;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+}
+
+.settings-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.settings-btn img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border-radius: 50%;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  text-align: center;
+  overflow-y: auto;
+}
+
+.page-heading {
+  color: var(--text-color);
+  margin-bottom: 20px;
+}
+
+/* Settings Modal Styles (copied from history.css) */
+.settings-modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(27, 38, 59, 0.6);
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-modal-content {
+  background: var(--modal-bg-color);
+  color: var(--modal-text-color);
+  margin: auto;
+  padding: 32px 24px 24px 24px;
+  border-radius: 18px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(27,38,59,0.18);
+  text-align: center;
+}
+
+.close-modal {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--modal-text-color);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-modal:hover {
+  color: var(--yellow);
+}
+
+.settings-modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 28px;
+  font-size: 1.8rem;
+  color: var(--modal-text-color);
+}
+
+.settings-modal-content h6 {
+  margin-top: 10px;
+  margin-bottom: 5px;
+  font-size: 0.8rem;
+  color: var(--yellow);
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid #ddd;
+  color: var(--modal-text-color);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item label {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.settings-link {
+  color: var(--modal-text-color);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.settings-link-with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.settings-link-with-icon:hover,
+.settings-link-with-icon:hover span {
+  color: var(--modal-text-color);
+  text-decoration: none;
+}
+
+.setting-item a img {
+  width: 20px;
+  height: 20px;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 80px;
+  height: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-switch input[type="checkbox"] {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-switch label {
+  display: block;
+  width: 50px;
+  height: 25px;
+  background: var(--toggle-bg);
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s;
+  border: 1px solid #000;
+  box-sizing: border-box;
+}
+
+.toggle-switch label::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--toggle-knob);
+  border-radius: 50%;
+  transition: left 0.3s, background-color 0.3s;
+}
+
+.modal-toggle label::after {
+  /* Styles for modal toggle are more specific */
+}
+
+/* Dark Mode: Knob on the left */
+.modal-toggle input#darkModeToggleModal:checked + label::after {
+  left: 3px;
+}
+
+/* Light Mode: Knob on the right */
+.modal-toggle input#darkModeToggleModal:not(:checked) + label::after {
+  left: 27px;
+}
+
+.btn-primary {
+  background-color: var(--yellow);
+  color: var(--navy);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #fca833;
+}
+
+.btn-primary:disabled {
+  background-color: #ccc;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Light mode adjustments */
+body.light-mode .page-heading {
+  color: var(--text-color);
+}
+
+body.light-mode .main-content p {
+  color: var(--navy);
+}
+
+/* Customise Page Specific Styles */
+.customise-section {
+  background-color: var(--customise-section-bg-dark-default);
+  color: var(--customise-section-text-dark-default);
+  padding: var(--customise-section-padding);
+  border-radius: var(--customise-section-radius);
+  margin-bottom: var(--customise-section-margin-bottom);
+  width: 100%;
+  max-width: var(--customise-section-max-width);
+  box-shadow: var(--customise-section-shadow);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.customise-section:hover {
+  background-color: var(--customise-section-bg-dark-hover);
+  color: var(--customise-section-text-dark-hover);
+}
+
+body.light-mode .customise-section {
+  background-color: var(--customise-section-bg-light-default);
+  color: var(--customise-section-text-light-default);
+}
+
+body.light-mode .customise-section:hover {
+  background-color: var(--customise-section-bg-light-hover);
+  color: var(--customise-section-text-light-hover);
+}
+
+.customise-section h2,
+.customise-section .setting-item-custom label {
+  color: inherit;
+}
+
+.setting-item-custom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  margin-bottom: 5px;
+}
+
+/* Default state for labels within .customise-section */
+.customise-section .setting-item-custom label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--customise-section-text-dark-default); /* Default to navy for dark mode (white section) */
+  margin-right: 15px;
+  white-space: nowrap;
+}
+
+/* Light mode: Default state for labels (on navy section background) */
+body.light-mode .customise-section .setting-item-custom label {
+  color: var(--customise-section-text-light-default); /* Explicitly WHITE for light mode default (navy section) */
+}
+
+/* Light mode: Hover state for labels (on yellow section background) */
+body.light-mode .customise-section:hover .setting-item-custom label {
+  color: #000000; /* Black text as previously set */
+}
+
+/* Ensure h2 inherits correctly or has explicit colors if needed */
+.customise-section h2 {
+  color: inherit; /* Should inherit from .customise-section rules */
+}
+
+.setting-item-custom select,
+.setting-item-custom input[type="text"] {
+  background-color: #f8f9fa;
+  color: var(--navy);
+  border: 1px solid #ced4da;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: var(--font);
+  min-width: 160px;
+  flex-grow: 1;
+  max-width: 250px;
+}
+
+body.light-mode .setting-item-custom select,
+body.light-mode .setting-item-custom input[type="text"] {
+  background-color: #FFFFFF;
+  color: var(--navy);
+  border: 1px solid #B0B0B0;
+}
+
+/* Styles for GENERAL toggles within customise sections */
+.customise-section .toggle-switch {
+  margin-left: auto;
+  height: 25px;
+}
+
+.customise-section .toggle-switch label {
+  width: 50px;
+  height: 25px;
+  background: var(--toggle-general-off-bg);
+  border-radius: 20px;
+  position: relative;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-sizing: border-box;
+}
+
+.customise-section .toggle-switch input[type="checkbox"]:checked + label {
+  background: var(--toggle-general-on-bg);
+}
+
+.customise-section .toggle-switch label::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 18px;
+  height: 18px;
+  background: var(--toggle-knob);
+  border-radius: 50%;
+  transition: left 0.3s, background-color 0.3s;
+}
+
+/* Customise page general toggle switch knob movement */
+/* Knob on the left (default/unchecked/off) */
+.customise-section .toggle-switch input[type="checkbox"]:not(:checked) + label::after {
+  left: 3px;
+}
+
+/* Knob on the right (checked/on) */
+.customise-section .toggle-switch input[type="checkbox"]:checked + label::after {
+  left: 27px;
+}
+
+/* Ensure these specific styles DO NOT override the dark mode toggle in the MODAL */
+/* The modal toggle uses .modal-toggle class for its specific track/knob colors */
+.modal-toggle label {
+  background: var(--toggle-bg);
+  border: 1px solid #000;
+}
+.modal-toggle input[type="checkbox"]:checked + label {
+  background: var(--toggle-bg);
+}
+.modal-toggle label::after {
+  background: var(--toggle-knob);
+}
+
+/* Modal Toggle Switch Styles (already present, for reference) */
+/* Dark Mode: Knob on the left */
+.modal-toggle input#darkModeToggleModal:checked + label::after {
+  left: 3px;
+}
+
+/* Light Mode: Knob on the right */
+.modal-toggle input#darkModeToggleModal:not(:checked) + label::after {
+  left: 27px;
+}
+
+/* Specific text color for labels on section hover in light mode */
+body.light-mode .customise-section:hover .setting-item-custom label {
+  color: #000000; /* Black text */
+}
+
+/* Ensure h2 also changes color correctly on hover, if needed, or remains as inherited */
+body.light-mode .customise-section:hover h2 {
+    color: var(--customise-section-text-light-hover); /* This should be navy as per :root */
+}
+
+@media (max-width: 700px) {
+  .main-content {
+    padding: 15px; /* Consistent padding with other pages */
+  }
+
+  .customise-section {
+    padding: 15px; /* Reduced padding for sections */
+    margin-bottom: 20px; /* Reduced margin */
+    --customise-section-max-width: 100%; /* Allow full width */
+  }
+
+  .customise-section h2 {
+    font-size: 1.3rem; /* Smaller section headings */
+    padding-bottom: 8px; /* Adjust padding */
+    margin-bottom: 15px; /* Adjust margin */
+  }
+
+  .setting-item-custom {
+    flex-direction: column; /* Stack label and control vertically */
+    align-items: flex-start; /* Align items to the start */
+    gap: 8px; /* Add gap between label and control */
+    padding: 12px 0; /* Adjust padding */
+  }
+
+  .customise-section .setting-item-custom label {
+    font-size: 0.9rem; /* Smaller labels */
+    margin-bottom: 0; /* Remove bottom margin as gap is used */
+  }
+
+  .setting-item-custom select,
+  .setting-item-custom input[type="text"] {
+    width: 100%; /* Full width for inputs/selects */
+    padding: 8px; /* Adjust padding */
+    font-size: 0.9rem; /* Adjust font size */
+  }
+  
+  .customise-section .toggle-switch {
+    transform: scale(0.9); /* Slightly scale down toggles */
+    margin-left: -5px; /* Adjust position due to scaling */
+  }
+  
+  .delete-btn {
+    padding: 7px 14px;
+    font-size: 0.9rem;
+    margin-right: 10px;
+  }
+} 
