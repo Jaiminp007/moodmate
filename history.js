@@ -6,6 +6,7 @@ const darkModeToggle = document.getElementById('darkModeToggleModal');
 const activitiesList = document.querySelector('.activities-list');
 const conversationList = document.querySelector('.conversation-list');
 const viewConvosBtn = document.getElementById('view-convos-btn');
+const deleteAllConvosBtn = document.getElementById('delete-all-convos-btn');
 
 // Function to toggle light/dark mode
 function toggleTheme() {
@@ -199,6 +200,15 @@ function handleViewAllConversations() {
     };
 }
 
+// Function to delete all conversations
+function deleteAllConversations() {
+    if (confirm('Are you sure you want to delete all conversations? This action cannot be undone.')) {
+        localStorage.removeItem('aiConversations');
+        displayMoodBoostActivities();
+        displayPastConversations();
+    }
+}
+
 // Initialize theme when page loads
 document.addEventListener('DOMContentLoaded', () => {
     // Check if user is logged in
@@ -283,5 +293,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (viewConvosBtn) {
         viewConvosBtn.addEventListener('click', handleViewAllConversations);
+    }
+
+    if (deleteAllConvosBtn) {
+        deleteAllConvosBtn.addEventListener('click', deleteAllConversations);
     }
 }); 
