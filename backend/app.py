@@ -41,20 +41,47 @@ def chat():
 
     # Construct messages for OpenAI API
     messages = [
-        {"role": "system", "content": "You are MoodMate, a warm, empathetic AI companion. "},
-        # Optionally add user preferences to the system message
-        # Example: {"role": "system", "content": f"User preferences: {user_preferences}. You are MoodMate..."},
+        {"role": "system", "content": """You are MoodMate, a warm, empathetic AI companion. 
+        Your responses should be supportive and helpful. After each response, suggest 3 personalized mood boost activities 
+        based on the conversation context. Format your response as follows:
+        
+        Main response: [Your empathetic response here]
+        
+        Analysis:
+        - Feeling: [Detected emotion: happy/sad/angry/fearful/disgusted/surprised/neutral]
+        - Tone: [Response tone: supportive/calm/encouraging/reassuring]
+        - Activities: [List of 3 personalized mood boost activities]"""},
         {"role": "user", "content": user_transcript}
     ]
     
     # --- Call OpenAI API ---
     try:
         chat_completion = client.chat.completions.create(
-            model="gpt-4o-mini", # Or "gpt-3.5-turbo" based on your preference/access
+            model="gpt-4", # Or "gpt-3.5-turbo" based on your preference/access
             messages=messages
         )
         ai_response = chat_completion.choices[0].message.content
-        return jsonify({'response': ai_response})
+
+        # Parse the response to extract main response and analysis
+        response_parts = ai_response.split('\n\nAnalysis:')
+        main_response = response_parts[0].replace('Main response:', '').strip()
+        
+        analysis = {}
+        if len(response_parts) > 1:
+            analysis_text = response_parts[1].strip()
+            for line in analysis_text.split('\n'):
+                if ':' in line:
+                    key, value = line.split(':', 1)
+                    key = key.strip('- ').lower()
+                    value = value.strip()
+                    if key == 'activities':
+                        value = [activity.strip() for activity in value.split('\n') if activity.strip()]
+                    analysis[key] = value
+
+        return jsonify({
+            'response': main_response,
+            'analysis': analysis
+        })
 
     except Exception as e:
         print(f"Error calling OpenAI API: {e}")

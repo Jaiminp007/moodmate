@@ -3,6 +3,9 @@ const settingsModal = document.getElementById('settings-modal');
 const settingsBtn = document.getElementById('settings-btn');
 const closeSettingsBtn = document.getElementById('close-settings');
 const darkModeToggle = document.getElementById('darkModeToggleModal');
+const activitiesList = document.querySelector('.activities-list');
+const conversationList = document.querySelector('.conversation-list');
+const viewConvosBtn = document.getElementById('view-convos-btn');
 
 // Function to toggle light/dark mode
 function toggleTheme() {
@@ -51,6 +54,151 @@ function getConversations() {
     return data ? JSON.parse(data) : [];
 }
 
+// Function to get the latest mood boost activities
+function getLatestMoodBoostActivities() {
+    const convos = getConversations();
+    if (convos.length === 0) return [];
+
+    // Get the latest conversation
+    const latestConvo = convos[convos.length - 1];
+    
+    // Find the latest assistant message with activities
+    const latestAssistantMessage = [...latestConvo.messages]
+        .reverse()
+        .find(msg => msg.role === 'assistant' && msg.activities);
+
+    return latestAssistantMessage ? latestAssistantMessage.activities : [];
+}
+
+// Function to display mood boost activities
+function displayMoodBoostActivities() {
+    const activities = getLatestMoodBoostActivities();
+    
+    // Clear existing activities
+    activitiesList.innerHTML = '';
+    
+    if (activities.length === 0) {
+        activitiesList.innerHTML = '<p>No mood boost activities available yet. Start a conversation to get personalized activities!</p>';
+        return;
+    }
+
+    // Display top 3 activities
+    activities.slice(0, 3).forEach(activity => {
+        const activityElement = document.createElement('p');
+        activityElement.textContent = activity;
+        activitiesList.appendChild(activityElement);
+    });
+}
+
+// Function to format timestamp
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleString();
+}
+
+// Function to get emoji for mood
+function getMoodEmoji(mood) {
+    const emojiMap = {
+        'happy': '😊',
+        'sad': '😢',
+        'angry': '😠',
+        'fearful': '😨',
+        'disgusted': '🤢',
+        'surprised': '😲',
+        'neutral': '😐'
+    };
+    return emojiMap[mood] || '😐';
+}
+
+// Function to display past conversations
+function displayPastConversations() {
+    const convos = getConversations();
+    
+    // Clear existing conversations
+    conversationList.innerHTML = '';
+    
+    if (convos.length === 0) {
+        conversationList.innerHTML = '<p>No past conversations available.</p>';
+        return;
+    }
+
+    // Display last 5 conversations
+    convos.slice(-5).reverse().forEach(convo => {
+        const lastMessage = convo.messages[convo.messages.length - 1];
+        if (lastMessage && lastMessage.role === 'assistant') {
+            const conversationItem = document.createElement('div');
+            conversationItem.className = 'conversation-item';
+            
+            const timestamp = document.createElement('p');
+            timestamp.textContent = `Timestamp: ${formatTimestamp(convo.messages[0].timestamp)}`;
+            
+            const mood = document.createElement('p');
+            mood.textContent = `Mood: ${getMoodEmoji(lastMessage.feeling || 'neutral')}`;
+            
+            conversationItem.appendChild(timestamp);
+            conversationItem.appendChild(mood);
+            conversationList.appendChild(conversationItem);
+        }
+    });
+}
+
+// Function to handle view all conversations
+function handleViewAllConversations() {
+    const convos = getConversations();
+    if (convos.length === 0) {
+        alert('No conversations available.');
+        return;
+    }
+
+    // Create modal for all conversations
+    const modal = document.createElement('div');
+    modal.className = 'conversations-modal';
+    modal.innerHTML = `
+        <div class="conversations-modal-content">
+            <h2>All Conversations</h2>
+            <div class="all-conversations-list"></div>
+            <button class="close-modal">Close</button>
+        </div>
+    `;
+
+    const conversationsList = modal.querySelector('.all-conversations-list');
+    convos.reverse().forEach(convo => {
+        const convoElement = document.createElement('div');
+        convoElement.className = 'conversation-detail';
+        
+        const title = document.createElement('h3');
+        title.textContent = `Conversation from ${formatTimestamp(convo.messages[0].timestamp)}`;
+        
+        const messages = document.createElement('div');
+        messages.className = 'conversation-messages';
+        
+        convo.messages.forEach(msg => {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${msg.role}`;
+            messageElement.textContent = msg.content;
+            messages.appendChild(messageElement);
+        });
+
+        convoElement.appendChild(title);
+        convoElement.appendChild(messages);
+        conversationsList.appendChild(convoElement);
+    });
+
+    document.body.appendChild(modal);
+
+    // Handle modal close
+    const closeBtn = modal.querySelector('.close-modal');
+    closeBtn.onclick = () => {
+        document.body.removeChild(modal);
+    };
+
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    };
+}
+
 // Initialize theme when page loads
 document.addEventListener('DOMContentLoaded', () => {
     // Check if user is logged in
@@ -88,7 +236,6 @@ document.addEventListener('DOMContentLoaded', () => {
     darkModeToggle.addEventListener('change', toggleTheme);
 
     // Conversation modal logic
-    const viewConvosBtn = document.getElementById('view-convos-btn');
     const convoModal = document.getElementById('convo-modal');
     const closeConvoModal = document.getElementById('close-convo-modal');
     const convoModalContent = document.getElementById('convo-modal-content');
@@ -129,5 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 convoModal.style.display = 'none';
             }
         });
+    }
+
+    displayMoodBoostActivities();
+    displayPastConversations();
+    
+    if (viewConvosBtn) {
+        viewConvosBtn.addEventListener('click', handleViewAllConversations);
     }
 }); 
