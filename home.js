@@ -105,18 +105,22 @@ function handleDeleteAccount() {
 
 // Function to save message to current conversation
 function saveMessageToConversation(role, content, analysis = null) {
-    console.log('Saving message:', { role, content, analysis }); // Debug log
+    console.log('=== saveMessageToConversation called ===');
+    console.log('Parameters:', { role, content, analysis });
 
     const convos = getConversations();
-    console.log('Current conversations:', convos); // Debug log
+    console.log('Current conversations from localStorage:', convos);
 
     const currentTitle = localStorage.getItem('currentConversationTitle');
-    console.log('Current conversation title:', currentTitle); // Debug log
+    console.log('Current conversation title from localStorage:', currentTitle);
 
     let convo = convos.find(c => c.title === currentTitle);
     if (!convo) {
-        console.log('No existing conversation found, creating new one'); // Debug log
+        console.log('No existing conversation found, creating new one');
         convo = startNewConversation();
+        console.log('New conversation created:', convo);
+    } else {
+        console.log('Found existing conversation:', convo);
     }
 
     const message = {
@@ -126,16 +130,19 @@ function saveMessageToConversation(role, content, analysis = null) {
     };
 
     if (role === 'assistant' && analysis) {
+        console.log('Adding analysis data to message:', analysis);
         message.feeling = analysis.feeling;
         message.tone = analysis.tone;
         message.activities = analysis.activities;
+        console.log('Message with analysis:', message);
     }
 
+    console.log('Adding message to conversation:', message);
     convo.messages.push(message);
-    console.log('Updated conversation:', convo); // Debug log
+    console.log('Updated conversation after adding message:', convo);
 
     saveConversations(convos);
-    console.log('Saved conversations to localStorage'); // Debug log
+    console.log('=== saveMessageToConversation completed ===');
 }
 
 // Function to get user customization summary from localStorage
@@ -412,7 +419,7 @@ function stopCurrentProcess(newState = states.IDLE, message = 'Tap Here to Start
     }
 
     currentState = newState;
-    if (mainBubble) {
+            if (mainBubble) {
         mainBubble.textContent = message;
         mainBubble.classList.remove('listening', 'processing', 'speaking');
         if (newState === states.ERROR) {
@@ -505,19 +512,24 @@ function initializeRecognition() {
             }
 
             const data = await response.json();
-            console.log('Received AI response:', data); // Debug log
+            console.log('=== AI Response Data ===');
+            console.log('Full response:', data);
+            console.log('Response content:', data.response);
+            console.log('Analysis data:', data.analysis);
+            console.log('Activities:', data.analysis?.activities);
 
             const aiResponseContent = data.response;
             const aiAnalysisData = data.analysis;
 
-            console.log('AI Analysis Data:', aiAnalysisData); // Debug log
-
             if (aiResponseContent) {
-                console.log('Saving AI response to conversation'); // Debug log
+                console.log('Saving AI response with analysis:', {
+                    content: aiResponseContent,
+                    analysis: aiAnalysisData
+                });
                 saveMessageToConversation('assistant', aiResponseContent, aiAnalysisData);
                 speakText(aiResponseContent);
             } else {
-                console.error('Backend response structure unexpected or empty content.', data);
+              console.error('Backend response structure unexpected or empty content.', data);
                 stopCurrentProcess(states.ERROR, 'Empty AI Response');
                 saveMessageToConversation('assistant', 'Error: Received an empty response from the AI.');
             }
@@ -617,6 +629,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!checkUserLoggedIn()) {
         return;
+    }
+
+    // Initialize a new conversation if none exists
+    const convos = getConversations();
+    if (convos.length === 0) {
+        console.log('No conversations found, creating initial conversation');
+        startNewConversation();
     }
 
     console.log('=== LocalStorage Contents ===');
@@ -751,13 +770,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function getConversations() {
     const data = localStorage.getItem('aiConversations');
-    console.log('Raw localStorage data:', data); // Debug log
-    return data ? JSON.parse(data) : [];
+    console.log('Raw localStorage data:', data);
+    const parsed = data ? JSON.parse(data) : [];
+    console.log('Parsed conversations:', parsed);
+    return parsed;
 }
 
 function saveConversations(conversations) {
-    console.log('Saving conversations:', conversations); // Debug log
+    console.log('Saving conversations to localStorage:', conversations);
     localStorage.setItem('aiConversations', JSON.stringify(conversations));
+    console.log('Verification - Reading back from localStorage:', localStorage.getItem('aiConversations'));
 }
 
 function generateConversationTitle() {

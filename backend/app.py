@@ -4,6 +4,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import httpx
 from flask_cors import CORS
+import re
 
 # Load environment variables from .env file (if it exists)
 load_dotenv()
@@ -40,18 +41,29 @@ def chat():
         return jsonify({'error': "'transcript' field is required'"}), 400
 
     # Construct messages for OpenAI API
+    system_message = """You are MoodMate, an empathetic AI therapist. Your role is to:
+    1. Provide supportive, empathetic responses to the user's concerns
+    2. Analyze the user's emotional state and tone
+    3. Suggest 3 personalized mood boost activities based on the conversation context
+    4. Format your response as follows:
+    
+    MAIN_RESPONSE: [Your empathetic response here]
+    
+    ANALYSIS:
+    - Feeling: [detected emotion: happy/sad/angry/fearful/disgusted/surprised/neutral]
+    - Tone: [response tone: empathetic/supportive/encouraging/calming]
+    - Activities: [List exactly 3 personalized activities based on the conversation context]
+    
+    Example activities format:
+    - Take a 10-minute walk outside to clear your mind
+    - Practice deep breathing exercises for 5 minutes
+    - Write down three things you're grateful for today
+    
+    Always provide exactly 3 activities that are relevant to the user's situation and emotional state."""
+
     messages = [
-        {"role": "system", "content": """You are MoodMate, a warm, empathetic AI companion. 
-        Your responses should be supportive and helpful. After each response, suggest 3 personalized mood boost activities 
-        based on the conversation context. Format your response as follows:
-        
-        Main response: [Your empathetic response here]
-        
-        Analysis:
-        - Feeling: [Detected emotion: happy/sad/angry/fearful/disgusted/surprised/neutral]
-        - Tone: [Response tone: supportive/calm/encouraging/reassuring]
-        - Activities: [List of 3 personalized mood boost activities]"""},
-        {"role": "user", "content": user_transcript}
+        {"role": "system", "content": system_message},
+        {"role": "user", "content": f"User preferences: {user_preferences}\n\nUser message: {user_transcript}"}
     ]
     
     # --- Call OpenAI API ---
@@ -61,23 +73,35 @@ def chat():
             messages=messages
         )
         ai_response = chat_completion.choices[0].message.content
+        print(f"Raw AI response from OpenAI: {ai_response}") # Debug log
 
-        # Parse the response to extract main response and analysis
-        response_parts = ai_response.split('\n\nAnalysis:')
-        main_response = response_parts[0].replace('Main response:', '').strip()
+        # Parse the response to separate main response and analysis
+        response_parts = ai_response.split('\n\nANALYSIS:')
+        main_response = response_parts[0].replace('MAIN_RESPONSE:', '').strip()
         
         analysis = {}
         if len(response_parts) > 1:
             analysis_text = response_parts[1].strip()
-            for line in analysis_text.split('\n'):
-                if ':' in line:
-                    key, value = line.split(':', 1)
-                    key = key.strip('- ').lower()
-                    value = value.strip()
-                    if key == 'activities':
-                        value = [activity.strip() for activity in value.split('\n') if activity.strip()]
-                    analysis[key] = value
-
+            
+            # Extract feeling
+            feeling_match = re.search(r'Feeling:\s*([^\n]+)', analysis_text)
+            if feeling_match:
+                analysis['feeling'] = feeling_match.group(1).strip()
+            
+            # Extract tone
+            tone_match = re.search(r'Tone:\s*([^\n]+)', analysis_text)
+            if tone_match:
+                analysis['tone'] = tone_match.group(1).strip()
+            
+            # Extract activities
+            activities_match = re.search(r'Activities:\s*([^-]+(?:-[^-]+)*)', analysis_text, re.DOTALL)
+            if activities_match:
+                activities_text = activities_match.group(1).strip()
+                # Split by newline and clean up each activity
+                activities = [act.strip('- ').strip() for act in activities_text.split('\n') if act.strip()]
+                analysis['activities'] = activities[:3]  # Ensure we only take the first 3 activities
+        
+        print(f"Parsed analysis data: {analysis}") # Debug log
         return jsonify({
             'response': main_response,
             'analysis': analysis

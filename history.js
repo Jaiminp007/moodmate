@@ -57,38 +57,71 @@ function getConversations() {
 
 // Function to get the latest mood boost activities
 function getLatestMoodBoostActivities() {
-    const convos = getConversations();
-    if (convos.length === 0) return [];
+    console.log('=== Getting Latest Mood Boost Activities ===');
+    const conversations = getConversations();
+    console.log('All conversations:', conversations);
 
-    // Get the latest conversation
-    const latestConvo = convos[convos.length - 1];
-    
-    // Find the latest assistant message with activities
-    const latestAssistantMessage = [...latestConvo.messages]
+    if (conversations.length === 0) {
+        console.log('No conversations found');
+        return [];
+    }
+
+    // Get the most recent conversation
+    const latestConversation = conversations[conversations.length - 1];
+    console.log('Latest conversation:', latestConversation);
+
+    if (!latestConversation.messages || latestConversation.messages.length === 0) {
+        console.log('No messages in latest conversation');
+        return [];
+    }
+
+    // Find the last assistant message with activities
+    const lastAssistantMessage = [...latestConversation.messages]
         .reverse()
-        .find(msg => msg.role === 'assistant' && msg.activities);
+        .find(msg => msg.role === 'assistant' && msg.activities && msg.activities.length > 0);
+    
+    console.log('Last assistant message with activities:', lastAssistantMessage);
+    
+    if (lastAssistantMessage && lastAssistantMessage.activities) {
+        console.log('Found activities:', lastAssistantMessage.activities);
+        return lastAssistantMessage.activities;
+    }
 
-    return latestAssistantMessage ? latestAssistantMessage.activities : [];
+    console.log('No activities found in latest conversation');
+    return [];
 }
 
 // Function to display mood boost activities
 function displayMoodBoostActivities() {
+    console.log('=== Displaying Mood Boost Activities ===');
     const activities = getLatestMoodBoostActivities();
-    
-    // Clear existing activities
-    activitiesList.innerHTML = '';
-    
-    if (activities.length === 0) {
-        activitiesList.innerHTML = '<p>No mood boost activities available yet. Start a conversation to get personalized activities!</p>';
+    console.log('Activities to display:', activities);
+
+    if (!activitiesList) {
+        console.error('Activities list element not found');
         return;
     }
 
-    // Display top 3 activities
-    activities.slice(0, 3).forEach(activity => {
-        const activityElement = document.createElement('p');
-        activityElement.textContent = activity;
-        activitiesList.appendChild(activityElement);
-    });
+    if (activities && activities.length > 0) {
+        console.log('Creating HTML for activities:', activities);
+        const activitiesHTML = activities.map(activity => `
+            <div class="activity-item">
+                <span class="activity-emoji">🎯</span>
+                <span class="activity-text">${activity}</span>
+            </div>
+        `).join('');
+        
+        console.log('Generated activities HTML:', activitiesHTML);
+        activitiesList.innerHTML = activitiesHTML;
+    } else {
+        console.log('No activities to display, showing empty state');
+        activitiesList.innerHTML = `
+            <div class="empty-state">
+                <p>No mood boost activities available yet.</p>
+                <p>Start a conversation to get personalized suggestions!</p>
+            </div>
+        `;
+    }
 }
 
 // Function to format timestamp
@@ -288,6 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Initial display of activities and conversations
+    console.log('Initializing history page display');
     displayMoodBoostActivities();
     displayPastConversations();
     
