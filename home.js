@@ -105,10 +105,17 @@ function handleDeleteAccount() {
 
 // Function to save message to current conversation
 function saveMessageToConversation(role, content, analysis = null) {
+    console.log('Saving message:', { role, content, analysis }); // Debug log
+
     const convos = getConversations();
+    console.log('Current conversations:', convos); // Debug log
+
     const currentTitle = localStorage.getItem('currentConversationTitle');
+    console.log('Current conversation title:', currentTitle); // Debug log
+
     let convo = convos.find(c => c.title === currentTitle);
     if (!convo) {
+        console.log('No existing conversation found, creating new one'); // Debug log
         convo = startNewConversation();
     }
 
@@ -125,7 +132,10 @@ function saveMessageToConversation(role, content, analysis = null) {
     }
 
     convo.messages.push(message);
+    console.log('Updated conversation:', convo); // Debug log
+
     saveConversations(convos);
+    console.log('Saved conversations to localStorage'); // Debug log
 }
 
 // Function to get user customization summary from localStorage
@@ -495,22 +505,21 @@ function initializeRecognition() {
             }
 
             const data = await response.json();
+            console.log('Received AI response:', data); // Debug log
 
-        const aiResponseContent = data.response;
-        const aiAnalysisData = data.analysis;
+            const aiResponseContent = data.response;
+            const aiAnalysisData = data.analysis;
 
-        console.log('AI Analysis Data received (JSON):', aiAnalysisData);
+            console.log('AI Analysis Data:', aiAnalysisData); // Debug log
 
-        if (aiResponseContent) {
-          console.log('AI Main Response received from backend:', aiResponseContent);
-
-          saveMessageToConversation('assistant', aiResponseContent, aiAnalysisData);
-
-          speakText(aiResponseContent);
+            if (aiResponseContent) {
+                console.log('Saving AI response to conversation'); // Debug log
+                saveMessageToConversation('assistant', aiResponseContent, aiAnalysisData);
+                speakText(aiResponseContent);
             } else {
-              console.error('Backend response structure unexpected or empty content.', data);
-           stopCurrentProcess(states.ERROR, 'Empty AI Response');
-           saveMessageToConversation('assistant', 'Error: Received an empty response from the AI.');
+                console.error('Backend response structure unexpected or empty content.', data);
+                stopCurrentProcess(states.ERROR, 'Empty AI Response');
+                saveMessageToConversation('assistant', 'Error: Received an empty response from the AI.');
             }
 
           } catch (error) {
@@ -742,11 +751,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function getConversations() {
     const data = localStorage.getItem('aiConversations');
+    console.log('Raw localStorage data:', data); // Debug log
     return data ? JSON.parse(data) : [];
 }
 
-function saveConversations(convos) {
-    localStorage.setItem('aiConversations', JSON.stringify(convos));
+function saveConversations(conversations) {
+    console.log('Saving conversations:', conversations); // Debug log
+    localStorage.setItem('aiConversations', JSON.stringify(conversations));
 }
 
 function generateConversationTitle() {
@@ -755,16 +766,21 @@ function generateConversationTitle() {
 }
 
 function startNewConversation() {
-    const convos = getConversations();
+    console.log('Starting new conversation'); // Debug log
     const title = generateConversationTitle();
+    localStorage.setItem('currentConversationTitle', title);
+    
     const newConvo = {
         title,
         started: Date.now(),
         messages: []
     };
+    
+    const convos = getConversations();
     convos.push(newConvo);
     saveConversations(convos);
-    localStorage.setItem('currentConversationTitle', title);
+    
+    console.log('New conversation created:', newConvo); // Debug log
     return newConvo;
 }
 
