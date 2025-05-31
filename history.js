@@ -53,6 +53,21 @@ function getConversations() {
 
 // Initialize theme when page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if user is logged in
+    const checkUserLoggedIn = () => {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (!currentUser || !currentUser.isLoggedIn) {
+            window.location.href = 'login.html';
+            return false;
+        }
+        return true;
+    };
+
+    // Check login status immediately
+    if (!checkUserLoggedIn()) {
+        return; // Stop execution if not logged in
+    }
+
     initializeTheme();
 
     // Hamburger Menu Toggle

@@ -1,3 +1,4 @@
+// Test comment to check edit functionality
 // Get DOM elements
 const settingsModal = document.getElementById('settings-modal');
 const settingsBtn = document.getElementById('settings-btn');
@@ -7,6 +8,24 @@ const mainThemeToggle = document.getElementById('theme-toggle'); // Navbar toggl
 const modalThemeToggle = document.getElementById('darkModeToggleModal'); // Modal toggle
 
 const emotionText = document.getElementById('emotionText');
+const mainBubble = document.querySelector('.main-bubble'); // Get main bubble element
+const bubbleGroup = document.querySelector('.bubble-group'); // Get bubble group for listening class
+
+// Define states
+const states = {
+    IDLE: 'idle',
+    LISTENING: 'listening',
+    PROCESSING: 'processing',
+    SPEAKING: 'speaking',
+    ERROR: 'error'
+};
+
+let currentState = states.IDLE;
+let recognition = null;
+let utterance = null;
+let audioContext = null;
+let animationFrameId = null;
+let stream = null; // To hold the media stream
 
 // Function to set the theme and update toggles
 function setTheme(isLightMode) {
@@ -55,508 +74,58 @@ function closeSettingsModal() {
   }
 }
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-  if (event.target === settingsModal) {
-    closeSettingsModal();
+// Function to handle logout
+function handleLogout() {
+  // Clear current user data
+  localStorage.removeItem('currentUser');
+  // Redirect to login page
+  window.location.href = 'login.html';
+}
+
+// Function to handle account deletion
+function handleDeleteAccount() {
+  if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser) {
+      // Get all users
+      const users = JSON.parse(localStorage.getItem('users')) || [];
+      // Remove the current user
+      const updatedUsers = users.filter(user => user.email !== currentUser.email);
+      // Update users in localStorage
+      localStorage.setItem('users', JSON.stringify(updatedUsers));
+      // Clear current user data
+      localStorage.removeItem('currentUser');
+      // Clear any other user-specific data
+      localStorage.removeItem('aiConversations');
+      // Redirect to login page
+      window.location.href = 'login.html';
+    }
   }
 }
 
-// Initialize theme when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    initializeTheme();
-    
-    // Hamburger Menu Toggle
-    const hamburgerMenu = document.getElementById('hamburger-menu');
-    const navLinksMenu = document.getElementById('nav-links-menu');
-
-    if (hamburgerMenu && navLinksMenu) {
-        hamburgerMenu.addEventListener('click', () => {
-            navLinksMenu.classList.toggle('active-menu');
-            const isExpanded = navLinksMenu.classList.contains('active-menu');
-            hamburgerMenu.setAttribute('aria-expanded', isExpanded);
-        });
+// Function to save message to current conversation
+function saveMessageToConversation(role, content, analysis = null) {
+    const convos = getConversations();
+    const currentTitle = localStorage.getItem('currentConversationTitle');
+    let convo = convos.find(c => c.title === currentTitle);
+    if (!convo) {
+        convo = startNewConversation();
     }
 
-    // Event listeners for modal
-    if (settingsBtn) {
-        settingsBtn.addEventListener('click', openSettingsModal);
-    }
-    if (closeSettingsBtn) {
-        closeSettingsBtn.addEventListener('click', closeSettingsModal);
-    }
-
-    // Add event listeners to both theme toggles
-    if (mainThemeToggle) {
-      mainThemeToggle.addEventListener('change', () => {
-        setTheme(!mainThemeToggle.checked);
-      });
-    }
-
-    if (modalThemeToggle) {
-      modalThemeToggle.addEventListener('change', () => {
-        setTheme(!modalThemeToggle.checked);
-      });
-    }
-
-    // Placeholder for start bubble
-    const startBubble = document.getElementById('start-bubble');
-    if (startBubble) {
-      // Remove the old alert listener
-      // startBubble.removeEventListener('click', function() { alert('Start tapped!'); });
-
-      startBubble.addEventListener('click', async function() {
-
-        // Check if speech is currently in progress and stop it
-        if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
-            console.log('Stopping ongoing speech...');
-            window.speechSynthesis.cancel();
-            // When speech is cancelled, the utterance.onend handler will set text back to 'Tap Here to Start'.
-            // We should stop here and not start a new recognition session.
-            return; // Stop processing this click event further
-        }
-
-        // Get a reference to the main bubble
-        const mainBubble = document.querySelector('.main-bubble');
-
-        // If not currently speaking, check if the bubble is in the 'ready' state to start listening
-        if (mainBubble && mainBubble.textContent.trim() !== 'Tap Here to Start') {
-             // If the text is not 'Tap Here to Start', it means we are already in a listening state or transitioning.
-             // Do not start a new recognition session.
-             console.log('Bubble is not in the ready state to start listening.');
-             return; // Stop processing this click event further
-        }
-
-        // If we reach here, it means the bubble was clicked and it was in the 'Tap Here to Start' state.
-        // Proceed with starting the listening process.
-
-        // Check for browser support for Web Speech API
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-          console.warn('Web Speech API is not supported in this browser.');
-          startBubble.textContent = 'Voice input not supported';
-          startBubble.style.cursor = 'default';
-          return;
-        }
-
-        // Get the bubble-group for the listening class
-        const bubbleGroup = document.querySelector('.bubble-group');
-        if (!bubbleGroup || !mainBubble) {
-            console.error('Required bubble elements not found.');
-            return;
-        }
-
-        // --- Get Microphone Access FIRST ---
-        let stream;
-        try {
-            console.log('Requesting microphone access...');
-            // Request microphone access
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            console.log('Microphone access granted.');
-        } catch (err) {
-            const mainBubble = document.querySelector('.main-bubble');
-            console.error('Error accessing microphone:', err);
-            // Display an error message or handle accordingly
-             if (mainBubble) {
-                 mainBubble.textContent = 'Mic access denied';
-                 mainBubble.style.cursor = 'default';
-             }
-            return; // Stop if microphone access is denied
-        }
-
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
-        recognition.continuous = false; // set true for continuous listening
-        recognition.interimResults = false;
-
-        // --- Web Audio API and Animation Setup ---
-        let audioContext;
-        let analyser;
-        let dataArray;
-        // Source will now use the stream obtained above
-        let source;
-        let animationFrameId;
-        let currentScale = 1.0; // For smoothing
-        const smoothingFactor = 0.2; // Adjust for desired smoothness
-
-        // Function to start audio processing and animation
-        // This function now receives the stream
-        function startAudioProcessing(audioStream) {
-            try {
-                // Create AudioContext and nodes
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                analyser = audioContext.createAnalyser();
-                // Use the provided stream
-                source = audioContext.createMediaStreamSource(audioStream);
-
-                // Configure analyser
-                analyser.fftSize = 256; // Size of FFT, affects frequency data resolution
-                const bufferLength = analyser.frequencyBinCount; // Number of data points
-                dataArray = new Uint8Array(bufferLength); // Array to hold frequency data (0-255)
-
-                // Connect nodes
-                source.connect(analyser);
-                // analyser.connect(audioContext.destination); // Uncomment to hear mic input
-
-                // Start the animation loop
-                draw();
-                console.log('Audio processing started.');
-
-            } catch (err) {
-                console.error('Error setting up audio processing:', err);
-                // If audio processing setup fails, stop recognition and clean up
-                if (recognition) recognition.stop();
-                handleRecognitionEnd(); // Clean up any animation/state
-            }
-        }
-
-        // Animation loop
-        function draw() {
-            animationFrameId = requestAnimationFrame(draw); // Continue the loop
-
-            // Get frequency data
-            analyser.getByteFrequencyData(dataArray); // Or getByteTimeDomainData for waveform
-
-            // Simple volume calculation: average of the frequency data
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-                sum += dataArray[i];
-            }
-            let average = (sum / dataArray.length);
-
-            // Map volume to scale: Adjust these values as needed
-            // Increased maxScale for more noticeable animation
-            const minScale = 1.0; // Base scale
-            const maxScale = 1.2; // Increased max scale factor (e.g., 20% growth) - adjust for desired effect
-            const volumeThreshold = 20; // Minimum volume to start scaling from 1.0
-            const volumeRange = 130; // The range of volume values (from threshold upwards) that map to the scale range
-            const clampedVolume = Math.max(0, Math.min(average - volumeThreshold, volumeRange)); // Clamp and offset volume
-            let targetScale = minScale + (clampedVolume / volumeRange) * (maxScale - minScale);
-
-            // Ensure a minimum scale even with low volume, but only when listening is active
-            if (bubbleGroup.classList.contains('listening')) {
-                 targetScale = Math.max(minScale, targetScale); // Don't shrink below minScale when listening
-            }
-
-            // Smooth the scale change with interpolation (lerp)
-            currentScale += (targetScale - currentScale) * smoothingFactor;
-
-            // Apply the scale transform to the main bubble
-            if (mainBubble) {
-                mainBubble.style.transform = `scale(${currentScale})`;
-            }
-        }
-
-        // Function to stop audio processing and animation
-        function stopAudioProcessing() {
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = null;
-            }
-            // Stop all tracks on the stream
-            if (stream) {
-                 stream.getTracks().forEach(track => track.stop());
-            }
-            if (audioContext && audioContext.state !== 'closed') {
-                audioContext.close().catch(e => console.error('Error closing audio context:', e));
-            }
-            // Reset scale when stopping
-            if (mainBubble) {
-                 mainBubble.style.transform = 'scale(1.0)';
-            }
-            console.log('Audio processing stopped.');
-        }
-
-        // --- Speech Recognition Setup (Integrated) ---
-
-        recognition.onresult = async function(event) {
-          const transcript = event.results[0][0].transcript;
-          console.log('User said:', transcript);
-
-          // Get user customization summary
-          const userPreferences = getUserCustomisationSummary();
-          console.log('User preferences:', userPreferences);
-
-          // Send transcript and preferences to the backend
-          try {
-            const response = await fetch('https://moodmate-bj4k.onrender.com/api/chat', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                transcript: transcript,
-                preferences: userPreferences
-              })
-            });
-
-            if (!response.ok) {
-              const errorDetail = await response.text();
-              console.error(`Backend API error: ${response.status} - ${response.statusText}`, errorDetail);
-              // Optionally update mainBubble text to indicate error
-              const mainBubble = document.querySelector('.main-bubble');
-              if (mainBubble) {
-                  mainBubble.textContent = 'Error getting response';
-              }
-              return;
-            }
-
-            const data = await response.json();
-            const aiResponse = data.response; // Assuming your backend returns { response: "AI text" }
-
-            if (aiResponse) {
-              console.log('AI Response received from backend:', aiResponse);
-              // Save AI message to conversation
-              saveMessageToConversation('assistant', aiResponse);
-              speakText(aiResponse);
-            } else {
-              console.error('Backend response structure unexpected or empty content.', data);
-               const mainBubble = document.querySelector('.main-bubble');
-                if (mainBubble) {
-                    mainBubble.textContent = 'Empty AI response';
-                }
-            }
-
-          } catch (error) {
-            console.error('Error sending transcript to backend:', error);
-             const mainBubble = document.querySelector('.main-bubble');
-              if (mainBubble) {
-                  mainBubble.textContent = 'Network error';
-              }
-          }
-        };
-
-        recognition.onstart = function() {
-            console.log('recognition.onstart triggered.');
-            // Add the listening class and change text when recognition actually starts
-            if (bubbleGroup) {
-                bubbleGroup.classList.add('listening');
-            }
-            if (mainBubble) {
-                mainBubble.textContent = 'Listening...';
-            }
-            console.log('Speech recognition started.');
-            // Audio processing animation is already started via startAudioProcessing(stream);
-        };
-
-        // This handles both recognition ending normally or due to an error
-        const handleRecognitionEnd = function() {
-            console.log('handleRecognitionEnd triggered.');
-            const bubbleGroup = document.querySelector('.bubble-group');
-            if (bubbleGroup) {
-                bubbleGroup.classList.remove('listening');
-            }
-            if (mainBubble) {
-                 mainBubble.textContent = 'Tap Here to Start'; // Revert text
-            }
-            console.log('Speech recognition ended.');
-            stopAudioProcessing(); // Stop audio and animation when recognition ends
-        };
-
-        recognition.onend = function() {
-             console.log('recognition.onend triggered.');
-             handleRecognitionEnd();
-        };
-
-        recognition.onerror = function(event) {
-            console.error('Speech recognition error triggered:', event.error);
-            // Clean up and stop animation even on error
-            handleRecognitionEnd();
-        };
-
-        // Step 4: Trigger recognition and audio processing after getting stream
-        console.log('Starting audio processing and speech recognition...');
-
-        // Start audio processing with the obtained stream
-        startAudioProcessing(stream);
-
-        // Start speech recognition - relies on permission granted by getUserMedia
-        try {
-            console.log('Attempting to call recognition.start()...');
-            recognition.start();
-            // The 'listening' class and text change will happen in recognition.onstart
-        } catch (e) {
-            console.error('Error calling recognition.start():', e);
-            // If recognition.start() fails, stop audio processing and revert UI
-            stopAudioProcessing();
-             if (bubbleGroup) {
-                bubbleGroup.classList.remove('listening');
-            }
-             if (mainBubble) {
-                 mainBubble.textContent = 'Tap Here to Start'; // Revert text on error
-             }
-        }
-      });
-    }
-
-    // Check if face tracking is enabled before proceeding
-    const isFaceTrackingEnabled = localStorage.getItem('faceTrackingEnabled') === 'true';
-    const emotionEmoji = document.getElementById('emotionEmoji'); // Get emoji element here for potential hiding
-    const emotionDisplay = document.querySelector('.emotion-display');
-
-    if (!isFaceTrackingEnabled) {
-        if (emotionDisplay) {
-            emotionDisplay.style.display = 'none'; // Hide the entire emotion display if tracking is off
-        }
-        // Optionally, stop the video element if it was already part of the DOM and might autoplay due to attributes
-        const videoElementForStop = document.getElementById('videoInput');
-        if (videoElementForStop && videoElementForStop.srcObject) {
-            videoElementForStop.srcObject.getTracks().forEach(track => track.stop());
-            videoElementForStop.srcObject = null;
-        }
-        return; // Do not proceed with face tracking setup
-    } else {
-        if (emotionDisplay) {
-            emotionDisplay.style.display = 'block'; // Ensure emotion display is visible if tracking is on
-        }
-    }
-
-    // Face Expression Tracking
-    // Ensure faceapi is defined (loaded via CDN)
-    if (typeof faceapi === 'undefined') {
-        const emotionEmojiElement = document.getElementById('emotionEmoji');
-        if (emotionEmojiElement) {
-            emotionEmojiElement.alt = "face-api load error";
-            emotionEmojiElement.src = "assets/neutral.png"; // Default or error image
-        }
-        return; // Stop further execution if face-api.js is not available
-    }
-
-    const video = document.getElementById('videoInput');
-    const emojiMap = {
-        happy: 'assets/happy.png',
-        sad: 'assets/sad.png',
-        neutral: 'assets/neutral.png'
+    const message = {
+        role,
+        content,
+        timestamp: Date.now()
     };
 
-    if (!video) {
-        return;
-    }
-    if (!emotionEmoji) {
-        // return; // Don't return here, as video setup might still be useful for debugging
-    }
-
-    // Update the emoji and text based on detected emotion
-    function updateEmotionDisplay(emotion) {
-        if (emotionEmoji && emotionText) {
-            emotionEmoji.src = emojiMap[emotion] || 'assets/neutral.png';
-            emotionText.textContent = emotion.charAt(0).toUpperCase() + emotion.slice(1);
-        }
+    if (role === 'assistant' && analysis) {
+        message.feeling = analysis.feeling;
+        message.tone = analysis.tone;
+        message.activities = analysis.activities;
     }
 
-    async function startVideo() {
-        try {
-            // Check if mediaDevices and getUserMedia are supported
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: {} });
-                video.srcObject = stream;
-
-                // Attempt to play the video explicitly
-                try {
-                    await video.play();
-                } catch (playError) {
-                    if (emotionEmoji) emotionEmoji.alt = "Video play error: " + playError.name;
-                    // Common errors here: NotAllowedError (if user hasn't interacted or permission denied after stream acquired)
-                    // AbortError, etc.
-                }
-
-            } else {
-                if (emotionEmoji) emotionEmoji.alt = "Webcam not supported";
-            }
-        } catch (err) { // This catch is for getUserMedia errors
-            if (emotionEmoji) emotionEmoji.alt = "Webcam getUserMedia error: " + err.name;
-        }
-    }
-
-    async function loadModelsAndStart() {
-        // const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights'; // Old problematic URL
-        const MODEL_URL = 'https://vladmandic.github.io/face-api/model/'; // New URL pointing to a more robustly hosted set of models
-        try {
-            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-            await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-            await startVideo(); // Wait for video to be set up before adding play listener
-        } catch (err) {
-            if (emotionEmoji) emotionEmoji.alt = "Model load error";
-        }
-    }
-
-    if (video) {
-        video.addEventListener('loadedmetadata', () => {
-        });
-
-        // The 'play' event indicates playback has begun, but not necessarily that the first frame is processable.
-        video.addEventListener('play', () => {
-        });
-
-        // The 'canplay' event is a better indicator that the media is ready for processing.
-        video.addEventListener('canplay', () => {
-            
-            if (!faceapi.nets.tinyFaceDetector.params || !faceapi.nets.faceExpressionNet.params) {
-            }
-
-            // It's safer to create canvas and match dimensions once the video can play.
-            const canvas = faceapi.createCanvasFromMedia(video);
-            const displaySize = { width: video.videoWidth, height: video.videoHeight };
-            faceapi.matchDimensions(canvas, displaySize);
-
-            setInterval(async () => {
-                if (video.paused || video.ended) {
-                    return;
-                }
-                const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
-                
-                if (detections.length > 0 && detections[0].expressions) {
-                    const expressions = detections[0].expressions;
-
-                    let dominantEmotion = 'neutral';
-                    let maxScore = expressions.neutral || 0;
-
-                    if (expressions.happy > maxScore) {
-                        dominantEmotion = 'happy';
-                        maxScore = expressions.happy;
-                    }
-                    if (expressions.sad > maxScore) {
-                        dominantEmotion = 'sad';
-                    }
-                    
-                    if (emotionEmoji && emojiMap[dominantEmotion]) {
-                        if (emotionEmoji.src.includes(emojiMap[dominantEmotion]) === false) {
-                           emotionEmoji.src = emojiMap[dominantEmotion];
-                           emotionEmoji.alt = dominantEmotion;
-                        }
-                    } else {
-                        if (emotionEmoji && emojiMap.neutral && emotionEmoji.src.includes(emojiMap.neutral) === false) {
-                            emotionEmoji.src = emojiMap.neutral;
-                            emotionEmoji.alt = 'neutral (error determining emotion)';
-                        }
-                    }
-
-                    updateEmotionDisplay(dominantEmotion);
-                } else {
-                    if (emotionEmoji && emojiMap.neutral) {
-                        if (emotionEmoji.src.includes(emojiMap.neutral) === false) {
-                            emotionEmoji.src = emojiMap.neutral;
-                            emotionEmoji.alt = 'neutral (no face)';
-                        }
-                    }
-                }
-            }, 1000);
-        });
-
-        video.addEventListener('error', (e) => {
-            if (emotionEmoji) emotionEmoji.alt = "Video playback error";
-        });
-    }
-
-    // Initialize face tracking: Load models, then start video.
-    // The 'play' event listener on the video will then kick off the detection interval.
-    // This call is now conditional based on isFaceTrackingEnabled check above
-    loadModelsAndStart();
-});
-
-// On page load, ensure a conversation exists
-if (!localStorage.getItem('currentConversationTitle')) {
-    startNewConversation();
+    convo.messages.push(message);
+    saveConversations(convos);
 }
 
 // Function to get user customization summary from localStorage
@@ -575,7 +144,602 @@ function getUserCustomisationSummary() {
     return summary;
 }
 
-// Conversation history management
+// Function to speak text using Web Speech API
+function speakText(text) {
+    if ('speechSynthesis' in window) {
+        const synthesis = window.speechSynthesis;
+        if (synthesis.speaking) {
+            synthesis.cancel();
+        }
+
+        utterance = new SpeechSynthesisUtterance(text);
+
+        const voices = synthesis.getVoices();
+        let englishVoice = voices.find(voice => voice.lang === 'en-US' && voice.name.includes('female'));
+        if (!englishVoice) {
+            englishVoice = voices.find(voice => voice.lang === 'en-US');
+        }
+        if (englishVoice) {
+            utterance.voice = englishVoice;
+        } else {
+            console.warn('No English voice found, using default.');
+        }
+
+        utterance.onstart = function() {
+            console.log('Speech started. Current state:', currentState);
+            currentState = states.SPEAKING;
+            if (mainBubble) {
+                mainBubble.textContent = 'Speaking...';
+                mainBubble.classList.add('speaking');
+                if (bubbleGroup) bubbleGroup.classList.remove('listening');
+            }
+        };
+
+        utterance.onend = function() {
+            console.log('Speech ended. Current state:', currentState);
+            currentState = states.LISTENING;
+            if (mainBubble) {
+                mainBubble.textContent = 'Listening...';
+                mainBubble.classList.remove('speaking');
+                if (bubbleGroup) bubbleGroup.classList.add('listening');
+            }
+            if (recognition && currentState === states.LISTENING) {
+                try {
+                    recognition.start();
+                    console.log('Recognition restarted automatically.');
+                } catch (e) {
+                    console.error('Error restarting recognition:', e);
+                    stopCurrentProcess();
+                }
+            }
+        };
+
+        utterance.onerror = function(event) {
+            console.error('Speech synthesis error:', event.error);
+            stopCurrentProcess(states.ERROR, `Speech Error: ${event.error}`);
+        };
+
+        synthesis.speak(utterance);
+    } else {
+        console.warn('Web Speech API is not supported in this browser for speaking.');
+        currentState = states.LISTENING;
+        if (mainBubble) {
+            mainBubble.textContent = 'Listening...';
+            if (bubbleGroup) bubbleGroup.classList.add('listening');
+        }
+        if (recognition && currentState === states.LISTENING) {
+            try {
+                recognition.start();
+                console.log('Recognition started after speaking not supported.');
+            } catch (e) {
+                console.error('Error starting recognition after speaking not supported:', e);
+                stopCurrentProcess();
+            }
+        }
+    }
+}
+
+// Web Audio API and Animation Setup
+let analyser = null;
+let dataArray = null;
+let source = null;
+        let currentScale = 1.0; // For smoothing
+        const smoothingFactor = 0.2; // Adjust for desired smoothness
+
+        // Function to start audio processing and animation
+async function startAudioProcessing() {
+    console.log('--- startAudioProcessing initiated ---');
+    console.log('Initial state:', { audioContext: audioContext ? audioContext.state : null, stream: stream ? stream.active : null, analyser: analyser !== null, source: source !== null });
+
+    try {
+        console.log('Requesting microphone access...');
+        // Request microphone access if stream is not already available or is inactive
+        if (!stream || !stream.active) {
+            if (stream && !stream.active) console.log('Existing stream is inactive, requesting new one.');
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log('Microphone access granted. Stream active:', stream.active);
+        }
+
+        // *** UPDATED: Always create a new AudioContext and analyser when starting processing ***
+        // Close any existing context first to be safe (should be null from stopCurrentProcess, but double check)
+        if (audioContext && audioContext.state !== 'closed') {
+             console.log(`Closing existing audio context (state: ${audioContext.state})...`);
+             await audioContext.close().catch(e => console.error('Error closing audio context before restart:', e));
+             console.log('Existing audio context closed.');
+        }
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('New audio context created (state:', audioContext.state, ').');
+
+                analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const bufferLength = analyser.frequencyBinCount;
+        dataArray = new Uint8Array(bufferLength);
+        console.log('New analyser node created.');
+
+        // Create new source from stream using the new audio context
+        if (!stream || !stream.active) {
+             console.error('Cannot create MediaStreamSource: Stream is not active.');
+             stopCurrentProcess(states.ERROR, 'Microphone stream inactive.');
+             return; // Stop if stream is somehow not active after getUserMedia
+        }
+        source = audioContext.createMediaStreamSource(stream);
+        console.log('New MediaStreamSource node created from stream.');
+
+        // Connect nodes: Source -> Analyser
+        console.log('Attempting to connect source to analyser.');
+                source.connect(analyser);
+        console.log('Source connected to analyser.');
+                // analyser.connect(audioContext.destination); // Uncomment to hear mic input
+
+        // Start the animation loop if not already running
+        if (!animationFrameId) {
+                draw();
+             console.log('Animation loop started.');
+        }
+        console.log('Audio processing started successfully.');
+
+            } catch (err) {
+                console.error('Error setting up audio processing:', err);
+        stopCurrentProcess(states.ERROR, 'Mic access denied or error.');
+            }
+    console.log('--- startAudioProcessing finished ---');
+    console.log('Final state:', { audioContext: audioContext ? audioContext.state : null, stream: stream ? stream.active : null, analyser: analyser !== null, source: source !== null });
+        }
+
+        // Animation loop
+        function draw() {
+    animationFrameId = requestAnimationFrame(draw);
+
+    if (currentState === states.LISTENING || currentState === states.SPEAKING) {
+         try {
+            analyser.getByteFrequencyData(dataArray);
+
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            let average = (sum / dataArray.length);
+
+            const minScale = 1.0;
+            const maxScale = 1.15;
+            const volumeThreshold = 20;
+            const volumeRange = 100;
+            const clampedVolume = Math.max(0, Math.min(average - volumeThreshold, volumeRange));
+            let targetScale = minScale + (clampedVolume / volumeRange) * (maxScale - minScale);
+
+             targetScale = Math.max(minScale, targetScale);
+
+            currentScale += (targetScale - currentScale) * smoothingFactor;
+
+            if (mainBubble) {
+                mainBubble.style.transform = `scale(${currentScale})`;
+            }
+         } catch (e) {
+             console.warn('Error accessing analyser data, stopping animation:', e);
+             cancelAnimationFrame(animationFrameId);
+             animationFrameId = null;
+             if (mainBubble) mainBubble.style.transform = 'scale(1.0)';
+         }
+    } else {
+         if (mainBubble) mainBubble.style.transform = 'scale(1.0)';
+         cancelAnimationFrame(animationFrameId);
+         animationFrameId = null;
+            }
+        }
+
+        // Function to stop audio processing and animation
+        function stopAudioProcessing() {
+     console.log('--- stopAudioProcessing initiated ---');
+     console.log('Initial state:', { audioContext: audioContext ? audioContext.state : null, stream: stream ? stream.active : null, analyser: analyser !== null, source: source !== null });
+
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+         console.log('Animation loop cancelled.');
+            }
+            // Stop all tracks on the stream
+            if (stream) {
+          console.log('Stopping stream tracks.');
+                 stream.getTracks().forEach(track => track.stop());
+          console.log('Stream tracks stopped. Stream active:', stream.active);
+          stream = null; // Clear the stream reference
+          console.log('Stream reference cleared.');
+            }
+     // *** UPDATED: Close AudioContext and clear references ***
+            if (audioContext && audioContext.state !== 'closed') {
+         console.log(`Closing audio context (state: ${audioContext.state})...`);
+                audioContext.close().catch(e => console.error('Error closing audio context:', e));
+         console.log('Audio context close requested.');
+     }
+     audioContext = null; // Clear the context reference
+     console.log('Audio context reference cleared.');
+
+     // *** UPDATED: Disconnect and clear analyser and source ***
+     if (source) {
+         console.log('Disconnecting source node.');
+         source.disconnect();
+         source = null;
+         console.log('Source node disconnected and reference cleared.');
+     }
+     if (analyser) {
+          // Analyser doesn't need explicit disconnect if its source is disconnected
+          analyser = null; // Clear the reference
+          console.log('Analyser reference cleared.');
+     }
+
+     // Reset scale and remove listening/speaking classes
+     if (mainBubble) mainBubble.style.transform = 'scale(1.0)';
+     if (bubbleGroup) bubbleGroup.classList.remove('listening', 'speaking');
+
+     console.log('Audio processing stopped.');
+     console.log('--- stopAudioProcessing finished ---');
+     console.log('Final state:', { audioContext: audioContext ? audioContext.state : null, stream: stream ? stream.active : null, analyser: analyser !== null, source: source !== null });
+}
+
+// Function to stop the current process and reset
+function stopCurrentProcess(newState = states.IDLE, message = 'Tap Here to Start') {
+    console.log(`Stopping current process. Current state: ${currentState}, Transitioning to: ${newState}`);
+    
+    // Only stop recognition if we're actually in a listening or processing state
+    if (recognition && (currentState === states.LISTENING || currentState === states.PROCESSING)) {
+        try {
+            recognition.abort();
+            console.log('Speech recognition aborted.');
+        } catch (e) {
+            console.error('Error aborting recognition:', e);
+        }
+    }
+
+    // Only stop speech synthesis if it's actually speaking
+    if ('speechSynthesis' in window && window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        console.log('Speech synthesis cancelled.');
+    }
+
+    // Only stop audio processing if we're not transitioning to listening state
+    if (newState !== states.LISTENING) {
+        stopAudioProcessing();
+    }
+
+    currentState = newState;
+    if (mainBubble) {
+        mainBubble.textContent = message;
+        mainBubble.classList.remove('listening', 'processing', 'speaking');
+        if (newState === states.ERROR) {
+            mainBubble.classList.add('error-state');
+        } else {
+            mainBubble.classList.remove('error-state');
+        }
+    }
+    if (bubbleGroup) bubbleGroup.classList.remove('listening');
+
+    console.log('Process stopped and reset. New state:', currentState);
+}
+
+// --- Speech Recognition Setup ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function initializeRecognition() {
+     if (!SpeechRecognition) {
+        console.warn('Web Speech API is not supported in this browser.');
+        if (mainBubble) {
+          mainBubble.textContent = 'Voice input not supported';
+          mainBubble.style.cursor = 'default';
+        }
+        currentState = states.ERROR;
+        return null;
+     }
+
+     recognition = new SpeechRecognition();
+     recognition.lang = 'en-US';
+     recognition.continuous = true;
+     recognition.interimResults = false;
+
+    recognition.onstart = function() {
+        console.log('recognition.onstart triggered.');
+        currentState = states.LISTENING;
+        if (bubbleGroup) {
+            bubbleGroup.classList.add('listening');
+        }
+        if (mainBubble) {
+            mainBubble.textContent = 'Listening...';
+            mainBubble.classList.remove('processing', 'speaking', 'error-state');
+        }
+        console.log('Speech recognition started. Current state:', currentState);
+    };
+
+        recognition.onresult = async function(event) {
+          const transcript = event.results[0][0].transcript;
+          console.log('User said:', transcript);
+
+      if (recognition) {
+          try {
+             recognition.stop();
+             console.log('Recognition stopped for processing.');
+          } catch (e) {
+             console.error('Error stopping recognition:', e);
+          }
+      }
+
+          const userPreferences = getUserCustomisationSummary();
+          console.log('User preferences:', userPreferences);
+
+      saveMessageToConversation('user', transcript);
+
+      currentState = states.PROCESSING;
+      if (mainBubble) {
+          mainBubble.textContent = 'Processing...';
+          mainBubble.classList.remove('listening', 'speaking', 'error-state');
+          if (bubbleGroup) bubbleGroup.classList.remove('listening');
+      }
+      console.log('Transitioned to Processing state:', currentState);
+
+          try {
+            const response = await fetch('https://moodmate-bj4k.onrender.com/api/chat', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                transcript: transcript,
+                preferences: userPreferences
+              })
+            });
+
+            if (!response.ok) {
+              const errorDetail = await response.text();
+              console.error(`Backend API error: ${response.status} - ${response.statusText}`, errorDetail);
+           stopCurrentProcess(states.ERROR, `Backend Error: ${response.status}`);
+           saveMessageToConversation('assistant', `Error: Could not get a response from the backend (Status: ${response.status}).`);
+              return;
+            }
+
+            const data = await response.json();
+
+        const aiResponseContent = data.response;
+        const aiAnalysisData = data.analysis;
+
+        console.log('AI Analysis Data received (JSON):', aiAnalysisData);
+
+        if (aiResponseContent) {
+          console.log('AI Main Response received from backend:', aiResponseContent);
+
+          saveMessageToConversation('assistant', aiResponseContent, aiAnalysisData);
+
+          speakText(aiResponseContent);
+            } else {
+              console.error('Backend response structure unexpected or empty content.', data);
+           stopCurrentProcess(states.ERROR, 'Empty AI Response');
+           saveMessageToConversation('assistant', 'Error: Received an empty response from the AI.');
+            }
+
+          } catch (error) {
+        console.error('Error sending transcript to backend or processing response:', error);
+         stopCurrentProcess(states.ERROR, 'Network Error');
+         saveMessageToConversation('assistant', `Error: Network communication failed: ${error.message}`);
+      }
+    };
+
+        recognition.onend = function() {
+             console.log('recognition.onend triggered. Current state:', currentState);
+         if (currentState === states.LISTENING) {
+              console.log('Recognition ended without result. Resetting.');
+              stopCurrentProcess();
+         } else if (currentState === states.PROCESSING || currentState === states.SPEAKING) {
+             console.log(`Recognition ended as expected in state: ${currentState}`);
+         } else {
+              console.warn(`recognition.onend triggered in unexpected state: ${currentState}. Performing full stop.`);
+              stopCurrentProcess();
+         }
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error triggered:', event.error);
+        stopCurrentProcess(states.ERROR, `Speech Error: ${event.error}`);
+    };
+
+    return recognition;
+}
+
+// Function to start the listening process
+async function startListening() {
+    console.log('Attempting to start listening. Current state:', currentState);
+    
+    // Only start if we're in IDLE or ERROR state
+    if (currentState === states.IDLE || currentState === states.ERROR) {
+        try {
+            currentState = states.LISTENING;
+
+            if (!recognition) {
+                initializeRecognition();
+                if (!recognition) {
+                    console.error('Failed to initialize speech recognition.');
+                    stopCurrentProcess(states.ERROR, 'Voice input setup failed');
+                    return;
+                }
+            }
+
+            // Start audio processing first
+            await startAudioProcessing();
+            if (currentState === states.ERROR) {
+                console.error('Audio processing failed to start');
+                return;
+            }
+
+            // Then start recognition
+            console.log('Starting speech recognition...');
+            recognition.start();
+            console.log('Speech recognition started successfully');
+        } catch (e) {
+            console.error('Error in startListening:', e);
+            stopCurrentProcess(states.ERROR, 'Voice input failed to start');
+        }
+    } else {
+        console.log(`Cannot start listening, already in state: ${currentState}. Stopping current process.`);
+        stopCurrentProcess();
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+  if (event.target === settingsModal) {
+    closeSettingsModal();
+  }
+  const isClickInsideBubbleGroup = bubbleGroup && bubbleGroup.contains(event.target);
+  const isClickInsideSettingsModal = settingsModal && settingsModal.contains(event.target);
+
+  if (currentState !== states.IDLE && currentState !== states.ERROR && !isClickInsideBubbleGroup && !isClickInsideSettingsModal) {
+      console.log('Click detected outside active bubble area. Stopping process.');
+      stopCurrentProcess();
+  }
+};
+
+// On page load...
+document.addEventListener('DOMContentLoaded', () => {
+    // Check if user is logged in
+    const checkUserLoggedIn = () => {
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (!currentUser || !currentUser.isLoggedIn) {
+            window.location.href = 'login.html';
+            return false;
+        }
+        return true;
+    };
+
+    if (!checkUserLoggedIn()) {
+        return;
+    }
+
+    console.log('=== LocalStorage Contents ===');
+    console.log('Current User:', JSON.parse(localStorage.getItem('currentUser')));
+    console.log('All Users:', JSON.parse(localStorage.getItem('users')));
+    console.log('AI Conversations:', JSON.parse(localStorage.getItem('aiConversations')));
+    console.log('Light Mode:', localStorage.getItem('lightMode'));
+    console.log('Face Tracking:', localStorage.getItem('faceTrackingEnabled'));
+    console.log('Response Length:', localStorage.getItem('responseLength'));
+    console.log('Mood Logging:', localStorage.getItem('moodLogging'));
+    console.log('Data Retention:', localStorage.getItem('dataRetention'));
+    console.log('Preferred Name:', localStorage.getItem('preferredName'));
+    console.log('Trigger Detection:', localStorage.getItem('triggerDetection'));
+    console.log('==========================');
+
+    initializeTheme();
+    initializeRecognition();
+
+    const hamburgerMenu = document.getElementById('hamburger-menu');
+    const navLinksMenu = document.getElementById('nav-links-menu');
+
+    if (hamburgerMenu && navLinksMenu) {
+        hamburgerMenu.addEventListener('click', () => {
+            navLinksMenu.classList.toggle('active-menu');
+            const isExpanded = navLinksMenu.classList.contains('active-menu');
+            hamburgerMenu.setAttribute('aria-expanded', isExpanded);
+        });
+    }
+
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', openSettingsModal);
+    }
+    if (closeSettingsBtn) {
+        closeSettingsBtn.addEventListener('click', closeSettingsModal);
+    }
+
+    if (mainThemeToggle) {
+      mainThemeToggle.addEventListener('change', () => {
+        setTheme(!mainThemeToggle.checked);
+      });
+    }
+
+    if (modalThemeToggle) {
+      modalThemeToggle.addEventListener('change', () => {
+        setTheme(!modalThemeToggle.checked);
+      });
+    }
+
+    // Add event listener for face tracking toggle in modal
+    const modalFaceTrackingToggle = document.getElementById('faceTrackingToggleModal');
+    if (modalFaceTrackingToggle) {
+        modalFaceTrackingToggle.addEventListener('change', (event) => {
+            const isEnabled = event.target.checked;
+            localStorage.setItem('faceTrackingEnabled', isEnabled);
+            console.log('Face tracking setting changed to:', isEnabled);
+
+            if (isEnabled) {
+                // If enabling, attempt to start video and load models
+                console.log('Attempting to start face tracking...');
+                const emotionDisplay = document.querySelector('.emotion-display');
+                if (emotionDisplay) emotionDisplay.style.display = 'block';
+                if (typeof faceapi !== 'undefined') {
+                     loadModelsAndStart();
+                } else {
+                     console.error('face-api.js is not loaded. Cannot start face tracking.');
+                     const emotionEmojiElement = document.getElementById('emotionEmoji');
+                     if (emotionEmojiElement) {
+                         emotionEmojiElement.alt = "face-api load error";
+                         emotionEmojiElement.src = "assets/neutral.png";
+                     }
+                 }
+            } else {
+                // If disabling, stop the video stream
+                console.log('Attempting to stop face tracking...');
+                const videoElementForStop = document.getElementById('videoInput');
+                if (videoElementForStop && videoElementForStop.srcObject) {
+                    videoElementForStop.srcObject.getTracks().forEach(track => track.stop());
+                    videoElementForStop.srcObject = null;
+                    console.log('Face tracking video stream stopped.');
+                }
+                const emotionDisplay = document.querySelector('.emotion-display');
+                if (emotionDisplay) emotionDisplay.style.display = 'none';
+                console.log('Face tracking stopped.');
+            }
+        });
+    }
+
+    const logoutBtn = document.querySelector('.logout-btn');
+    const deleteAccountBtn = document.querySelector('.delete-account-btn');
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+
+    if (deleteAccountBtn) {
+        deleteAccountBtn.addEventListener('click', handleDeleteAccount);
+    }
+
+    if (mainBubble) {
+      mainBubble.addEventListener('click', startListening);
+    }
+
+    const isFaceTrackingEnabled = localStorage.getItem('faceTrackingEnabled') === 'true';
+    const emotionEmoji = document.getElementById('emotionEmoji');
+    const emotionDisplay = document.querySelector('.emotion-display');
+
+    if (!isFaceTrackingEnabled) {
+        if (emotionDisplay) {
+            emotionDisplay.style.display = 'none';
+        }
+        const videoElementForStop = document.getElementById('videoInput');
+        if (videoElementForStop && videoElementForStop.srcObject) {
+            videoElementForStop.srcObject.getTracks().forEach(track => track.stop());
+            videoElementForStop.srcObject = null;
+        }
+    } else {
+        if (emotionDisplay) {
+            emotionDisplay.style.display = 'block';
+        }
+    if (typeof faceapi === 'undefined') {
+        const emotionEmojiElement = document.getElementById('emotionEmoji');
+        if (emotionEmojiElement) {
+            emotionEmojiElement.alt = "face-api load error";
+                 emotionEmojiElement.src = "assets/neutral.png";
+             }
+             console.error('face-api.js is not loaded.');
+            } else {
+             loadModelsAndStart();
+         }
+    }
+});
+
 function getConversations() {
     const data = localStorage.getItem('aiConversations');
     return data ? JSON.parse(data) : [];
@@ -614,101 +778,115 @@ function getCurrentConversation() {
     return convo;
 }
 
-function saveMessageToConversation(role, content) {
-    const convos = getConversations();
-    const currentTitle = localStorage.getItem('currentConversationTitle');
-    let convo = convos.find(c => c.title === currentTitle);
-    if (!convo) {
-        convo = startNewConversation();
-    }
-    convo.messages.push({ role, content, timestamp: Date.now() });
-    saveConversations(convos);
-}
-
-// On page load, ensure a conversation exists
-if (!localStorage.getItem('currentConversationTitle')) {
-    startNewConversation();
-}
-
-// Function to speak text using Web Speech API
-function speakText(text) {
-    if ('speechSynthesis' in window) {
-        const synthesis = window.speechSynthesis;
-        const utterance = new SpeechSynthesisUtterance(text);
-
-        // Get a reference to the main bubble (already available in scope)
-        const mainBubble = document.querySelector('.main-bubble');
-
-        // Optional: Configure voice, pitch, rate, etc.
-        // Example: utterance.voice = synthesis.getVoices().find(voice => voice.lang === 'en-US');
-        // Example: utterance.pitch = 1.0; // 0 to 2
-        // Example: utterance.rate = 1.0; // 0.1 to 10
-
-        // Get available voices and try to find an English one
-        const voices = synthesis.getVoices();
-        let englishVoice = voices.find(voice => voice.lang === 'en-US' && voice.name.includes('female')); // Prefer female
-        if (!englishVoice) {
-             englishVoice = voices.find(voice => voice.lang === 'en-US'); // Fallback to any en-US voice
-        }
-         if (englishVoice) {
-             utterance.voice = englishVoice;
-             // console.log('Using voice:', englishVoice.name); // Optional log to see which voice is used
-         } else {
-             console.warn('No English voice found, using default.');
-         }
-
-        // Event listeners for when speech starts and ends
-        utterance.onstart = function() {
-             if (mainBubble) {
-                 mainBubble.textContent = 'Stop Speaking';
-                 // Add a class to indicate speaking state if needed for styling
-                 mainBubble.classList.add('speaking');
-             }
-             console.log('Speech started.'); // Optional log
-        };
-
-        utterance.onend = function() {
-             if (mainBubble) {
-                 mainBubble.textContent = 'Tap Here to Start'; // Revert text
-                 mainBubble.classList.remove('speaking');
-             }
-             console.log('Speech ended.'); // Optional log
-             // Note: recognition is likely ended by now as well, handled by recognition.onend
-        };
-
-        utterance.onerror = function(event) {
-             console.error('Speech synthesis error:', event.error);
-             if (mainBubble) {
-                 mainBubble.textContent = 'Tap Here to Start'; // Revert text on error
-                 mainBubble.classList.remove('speaking');
-             }
-        };
-
-        // Example: utterance.pitch = 1.0; // 0 to 2
-        // Example: utterance.rate = 1.0; // 0.1 to 10
-
-        synthesis.speak(utterance);
+    if (typeof faceapi === 'undefined') {
+       console.warn('face-api.js not loaded. Face tracking will not be available.');
     } else {
-        console.warn('Web Speech API is not supported in this browser.');
-    }
-}
+        const video = document.getElementById('videoInput');
+        const emotionEmoji = document.getElementById('emotionEmoji');
+        const emotionText = document.getElementById('emotionText');
+        const emojiMap = {
+            happy: 'assets/happy.png',
+            sad: 'assets/sad.png',
+            neutral: 'assets/neutral.png',
+            angry: 'assets/angry.png',
+            fearful: 'assets/fearful.png',
+            disgusted: 'assets/disgusted.png',
+            surprised: 'assets/surprised.png'
+        };
 
-// Example of how you might use these functions:
-// Assuming you have your transcript ready in a variable:
-// const userTranscript = "Tell me a joke about computers.";
-// sendTranscriptToOpenAI(userTranscript); // This will log the response
-// To speak the response, you would call speakText() after receiving it
-// For example, inside the .onresult handler after getting the transcript:
-/*
-recognition.onresult = async function(event) {
-    const transcript = event.results[0][0].transcript;
-    console.log('User said:', transcript);
-    const aiResponse = await sendTranscriptToOpenAI(transcript);
-    if (aiResponse) {
-        speakText(aiResponse);
-    }else{
-       // Handle case where API call failed
-       console.error('Failed to get AI response.');
+        function updateEmotionDisplay(emotion) {
+            if (emotionEmoji && emotionText) {
+                emotionEmoji.src = emojiMap[emotion] || 'assets/neutral.png';
+                emotionText.textContent = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+            }
+        }
+
+        async function startVideo() {
+            const videoElement = document.getElementById('videoInput');
+            if (!videoElement) { return; }
+            try {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    const videoStream = await navigator.mediaDevices.getUserMedia({ video: {} });
+                    videoElement.srcObject = videoStream;
+
+                    try {
+                        await videoElement.play();
+                    } catch (playError) {
+                        if (emotionEmoji) emotionEmoji.alt = "Video play error: " + playError.name;
+                        console.error('Error playing video:', playError);
+                    }
+
+                } else {
+                    if (emotionEmoji) emotionEmoji.alt = "Webcam not supported";
+                     console.warn('getUserMedia not supported.');
+                }
+            } catch (err) {
+                if (emotionEmoji) emotionEmoji.alt = "Webcam getUserMedia error: " + err.name;
+                 console.error('getUserMedia error:', err);
+            }
+        }
+
+        async function loadModelsAndStart() {
+            const MODEL_URL = 'https://vladmandic.github.io/face-api/model/';
+            try {
+                console.log('Loading face-api models...');
+                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
+                 console.log('Models loaded.');
+                await startVideo();
+            } catch (err) {
+                if (emotionEmoji) emotionEmoji.alt = "Model load error";
+                 console.error('Error loading face-api models:', err);
+                 const emotionDisplay = document.querySelector('.emotion-display');
+                 if (emotionDisplay) emotionDisplay.style.display = 'none';
+            }
+        }
+
+         if (video) {
+            video.addEventListener('canplay', () => {
+                 console.log('Video can play. Starting face detection interval.');
+
+                 setInterval(async () => {
+                     if (video.paused || video.ended || !faceapi.nets.tinyFaceDetector.params || !faceapi.nets.faceExpressionNet.params) {
+                         return;
+                     }
+                     const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
+
+                     if (detections.length > 0 && detections[0].expressions) {
+                         const expressions = detections[0].expressions;
+
+                         let dominantEmotion = 'neutral';
+                         let maxScore = expressions.neutral || 0.5;
+
+                         const emotionList = ['happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised'];
+                         emotionList.forEach(emotion => {
+                              if (expressions[emotion] > maxScore) {
+                                  maxScore = expressions[emotion];
+                                  dominantEmotion = emotion;
+                              }
+                         });
+
+                          const currentAlt = emotionEmoji ? emotionEmoji.alt : '';
+                         if (currentAlt !== dominantEmotion || currentAlt === 'Emotion Emoji' || currentAlt.includes('error') || currentAlt.includes('face-api')) {
+                             updateEmotionDisplay(dominantEmotion);
+                             console.log('Detected emotion:', dominantEmotion, 'Score:', maxScore);
+                         }
+
+    } else {
+                          if (emotionEmoji && emotionEmoji.alt !== 'neutral (no face)') {
+                             updateEmotionDisplay('neutral');
+                             if (emotionEmoji) emotionEmoji.alt = 'neutral (no face)';
+                              console.log('No face detected.');
+                          }
+                     }
+                 }, 500);
+             });
+
+            video.addEventListener('error', (e) => {
+                if (emotionEmoji) emotionEmoji.alt = "Video playback error";
+                 console.error('Video playback error:', e);
+                 const emotionDisplay = document.querySelector('.emotion-display');
+                 if (emotionDisplay) emotionDisplay.style.display = 'none';
+            });
+         }
     }
-};
-*/

@@ -7,6 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="about.css">
   <link rel="stylesheet" href="pricing.css">
+  <script src="https://js.stripe.com/v3/"></script>
 </head>
 <body>
   <nav class="navbar">
@@ -43,12 +44,12 @@
             <li>❌ 📈 AI Journal Summaries</li>
             <li>❌ 🧪 Early Access to New Features</li>
           </ul>
-          <button class="plan-cta" >Get Started</button>
+          <button class="plan-cta">Get Started</button>
         </div>
         <!-- Plus Tier (Featured) -->
         <div class="pricing-card featured">
           <div class="plan-title">Plus</div>
-          <div class="plan-price">$4.99/mo</div>
+          <div class="plan-price">₹499/mo</div>
           <ul>
             <li>✅ 🎭 Facial Emotion Detection</li>
             <li>✅ 🎤 Voice-to-Voice Conversations</li>
@@ -59,12 +60,12 @@
             <li>❌ 📈 AI Journal Summaries</li>
             <li>❌ 🧪 Early Access to New Features</li>
           </ul>
-          <button class="plan-cta" disabled>Coming Soon</button>
+          <button class="plan-cta">Upgrade</button>
         </div>
         <!-- Pro Tier -->
         <div class="pricing-card">
           <div class="plan-title">Pro</div>
-          <div class="plan-price">$9.99/mo</div>
+          <div class="plan-price">₹999/mo</div>
           <ul>
             <li>✅ 🎭 Facial Emotion Detection</li>
             <li>✅ 🎤 Voice-to-Voice Conversations</li>
@@ -75,13 +76,13 @@
             <li>✅ 📈 AI Journal Summaries</li>
             <li>✅ 🧪 Early Access to New Features</li>
           </ul>
-          <button class="plan-cta" disabled>Coming Soon</button>
+          <button class="plan-cta">Upgrade</button>
         </div>
       </div>
-      <p style="text-align:center; margin-top: 40px; color: var(--text-color); font-size: 1.1rem;">No sign-up required for Free. Paid plans are coming soon!</p>
+      <p style="text-align:center; margin-top: 40px; color: var(--text-color); font-size: 1.1rem;">Start with our free plan and upgrade anytime!</p>
     </section>
   </main>
-  <!-- Settings Modal (copied from about.html) -->
+  <!-- Settings Modal -->
   <div id="settings-modal" class="settings-modal">
     <div class="settings-modal-content">
       <span class="close-modal" id="close-settings">&times;</span>
@@ -99,7 +100,7 @@
       </div>
       <div class="setting-item">
         <label>Account</label>
-        <button class="btn-primary" disabled>Edit Profile</button>
+        <button class="btn-primary" id="account-btn">Edit Profile</button>
       </div>
       <div class="setting-item">
         <a href="privacy.html" class="settings-link settings-link-with-icon">
@@ -111,5 +112,6 @@
     </div>
   </div>
   <script src="about.js"></script>
+  <script src="pricing.js"></script>
 </body>
 </html> 
