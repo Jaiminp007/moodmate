@@ -325,6 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Initializing history page display');
     displayMoodBoostActivities();
     displayPastConversations();
+    renderEmotionChart(); // Call the new chart rendering function
     
     if (viewConvosBtn) {
         viewConvosBtn.addEventListener('click', handleViewAllConversations);
@@ -333,4 +334,199 @@ document.addEventListener('DOMContentLoaded', () => {
     if (deleteAllConvosBtn) {
         deleteAllConvosBtn.addEventListener('click', deleteAllConversations);
     }
-}); 
+});
+
+// New function for Emotion Chart
+function renderEmotionChart() {
+    const ctx = document.getElementById('emotion-chart').getContext('2d');
+    const conversations = getConversations();
+    
+    const labels = [];
+    const dataPoints = [];
+    const emotionMap = {
+        'happy': 5,
+        'surprised': 4,
+        'neutral': 3,
+        'sad': 2,
+        'fearful': 1,
+        'angry': 0,
+        'disgusted': 0
+    };
+
+    // Get the date for the chart title
+    const today = new Date();
+    const chartDate = today.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+
+    conversations.forEach(convo => {
+        convo.messages.forEach(msg => {
+            if (msg.role === 'assistant' && msg.feeling) {
+                const emotion = msg.feeling.toLowerCase();
+                const mappedValue = emotionMap[emotion];
+                console.log(`Processing message: ${msg.content.substring(0, 30)}...`);
+                console.log(`Detected emotion: ${emotion}, Mapped value: ${mappedValue}`);
+                
+                // Parse the timestamp
+                let dateObject;
+                if (typeof msg.timestamp === 'number') {
+                    // Handle Unix timestamp (milliseconds)
+                    dateObject = new Date(msg.timestamp);
+                } else if (typeof msg.timestamp === 'string') {
+                    // Handle ISO string or other date string formats
+                    dateObject = new Date(msg.timestamp);
+                } else if (msg.timestamp instanceof Date) {
+                    dateObject = msg.timestamp;
+                } else {
+                    console.warn(`Invalid timestamp format: ${msg.timestamp}. Skipping this data point.`);
+                    return;
+                }
+
+                if (isNaN(dateObject.getTime())) {
+                    console.warn(`Invalid date found for timestamp: ${msg.timestamp}. Skipping this data point.`);
+                    return;
+                }
+
+                // Format only the time
+                labels.push(dateObject.toLocaleTimeString('en-US', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: true 
+                }));
+                dataPoints.push(mappedValue !== undefined ? mappedValue : 3);
+            }
+        });
+    });
+
+    console.log('Final chart labels:', labels);
+    console.log('Final chart data points:', dataPoints);
+
+    // Only create the chart if we have data
+    if (labels.length === 0) {
+        console.log('No valid data points found for the chart');
+        return;
+    }
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Emotional Trend',
+                data: dataPoints,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.3,
+                fill: false,
+                pointBackgroundColor: 'rgb(75, 192, 192)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgb(75, 192, 192)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: {
+                    top: 10,  // Further reduced top padding
+                    right: 20,
+                    bottom: 40,  // Increased bottom padding for time labels
+                    left: 20
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: chartDate,
+                    font: {
+                        size: 18,
+                        weight: 'bold'
+                    },
+                    padding: {
+                        top: 0,
+                        bottom: 10  // Reduced bottom padding of title
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: 'rgb(75, 192, 192)',
+                    borderWidth: 1,
+                    cornerRadius: 5,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const reverseEmotionMap = Object.keys(emotionMap).find(key => emotionMap[key] === value);
+                            return `Emotion: ${reverseEmotionMap ? reverseEmotionMap.charAt(0).toUpperCase() + reverseEmotionMap.slice(1) : 'Unknown'}`;
+                        }
+                    }
+                },
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#333'
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 5,
+                    ticks: {
+                        callback: function(value) {
+                            const reverseEmotionMap = Object.keys(emotionMap).find(key => emotionMap[key] === value);
+                            return reverseEmotionMap ? reverseEmotionMap.charAt(0).toUpperCase() + reverseEmotionMap.slice(1) : '';
+                        },
+                        color: '#666',
+                        font: {
+                            size: 14
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Emotion Level',
+                        color: '#333',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxRotation: 45,
+                        minRotation: 45,
+                        color: '#666',
+                        font: {
+                            size: 12
+                        },
+                        padding: 10  // Added padding to x-axis ticks
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    title: {
+                        display: true,
+                        text: 'Time',
+                        color: '#333',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        padding: {
+                            bottom: 10  // Added padding to x-axis title
+                        }
+                    }
+                }
+            }
+        }
+    });
+} 
