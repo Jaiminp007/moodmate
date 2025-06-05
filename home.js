@@ -816,115 +816,151 @@ function getCurrentConversation() {
     return convo;
 }
 
-    if (typeof faceapi === 'undefined') {
-       console.warn('face-api.js not loaded. Face tracking will not be available.');
-    } else {
-        const video = document.getElementById('videoInput');
+async function loadModelsAndStart() {
+    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/';
+    try {
+        console.log('Loading face-api models...');
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+            faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL)
+        ]);
+        console.log('Models loaded successfully');
+        await startVideo();
+    } catch (err) {
+        console.error('Error loading face-api models:', err);
         const emotionEmoji = document.getElementById('emotionEmoji');
-        const emotionText = document.getElementById('emotionText');
-        const emojiMap = {
-            happy: 'assets/happy.png',
-            sad: 'assets/sad.png',
-            neutral: 'assets/neutral.png',
-            angry: 'assets/angry.png',
-            fearful: 'assets/fearful.png',
-            disgusted: 'assets/disgusted.png',
-            surprised: 'assets/surprised.png'
-        };
-
-        function updateEmotionDisplay(emotion) {
-            if (emotionEmoji && emotionText) {
-                emotionEmoji.src = emojiMap[emotion] || 'assets/neutral.png';
-                emotionText.textContent = emotion.charAt(0).toUpperCase() + emotion.slice(1);
-            }
+        if (emotionEmoji) {
+            emotionEmoji.alt = "Model load error";
+            emotionEmoji.src = "assets/neutral.png";
         }
-
-        async function startVideo() {
-            const videoElement = document.getElementById('videoInput');
-            if (!videoElement) { return; }
-            try {
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    const videoStream = await navigator.mediaDevices.getUserMedia({ video: {} });
-                    videoElement.srcObject = videoStream;
-
-                    try {
-                        await videoElement.play();
-                    } catch (playError) {
-                        if (emotionEmoji) emotionEmoji.alt = "Video play error: " + playError.name;
-                        console.error('Error playing video:', playError);
-                    }
-
-                } else {
-                    if (emotionEmoji) emotionEmoji.alt = "Webcam not supported";
-                     console.warn('getUserMedia not supported.');
-                }
-            } catch (err) {
-                if (emotionEmoji) emotionEmoji.alt = "Webcam getUserMedia error: " + err.name;
-                 console.error('getUserMedia error:', err);
-            }
+        const emotionDisplay = document.querySelector('.emotion-display');
+        if (emotionDisplay) {
+            emotionDisplay.style.display = 'none';
         }
-
-        async function loadModelsAndStart() {
-            const MODEL_URL = 'https://vladmandic.github.io/face-api/model/';
-            try {
-                console.log('Loading face-api models...');
-                await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
-                 console.log('Models loaded.');
-                await startVideo();
-            } catch (err) {
-                if (emotionEmoji) emotionEmoji.alt = "Model load error";
-                 console.error('Error loading face-api models:', err);
-                 const emotionDisplay = document.querySelector('.emotion-display');
-                 if (emotionDisplay) emotionDisplay.style.display = 'none';
-            }
-        }
-
-         if (video) {
-            video.addEventListener('canplay', () => {
-                 console.log('Video can play. Starting face detection interval.');
-
-                 setInterval(async () => {
-                     if (video.paused || video.ended || !faceapi.nets.tinyFaceDetector.params || !faceapi.nets.faceExpressionNet.params) {
-                         return;
-                     }
-                     const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
-
-                     if (detections.length > 0 && detections[0].expressions) {
-                         const expressions = detections[0].expressions;
-
-                         let dominantEmotion = 'neutral';
-                         let maxScore = expressions.neutral || 0.5;
-
-                         const emotionList = ['happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised'];
-                         emotionList.forEach(emotion => {
-                              if (expressions[emotion] > maxScore) {
-                                  maxScore = expressions[emotion];
-                                  dominantEmotion = emotion;
-                              }
-                         });
-
-                          const currentAlt = emotionEmoji ? emotionEmoji.alt : '';
-                         if (currentAlt !== dominantEmotion || currentAlt === 'Emotion Emoji' || currentAlt.includes('error') || currentAlt.includes('face-api')) {
-                             updateEmotionDisplay(dominantEmotion);
-                             console.log('Detected emotion:', dominantEmotion, 'Score:', maxScore);
-                         }
-
-    } else {
-                          if (emotionEmoji && emotionEmoji.alt !== 'neutral (no face)') {
-                             updateEmotionDisplay('neutral');
-                             if (emotionEmoji) emotionEmoji.alt = 'neutral (no face)';
-                              console.log('No face detected.');
-                          }
-                     }
-                 }, 500);
-             });
-
-            video.addEventListener('error', (e) => {
-                if (emotionEmoji) emotionEmoji.alt = "Video playback error";
-                 console.error('Video playback error:', e);
-                 const emotionDisplay = document.querySelector('.emotion-display');
-                 if (emotionDisplay) emotionDisplay.style.display = 'none';
-            });
-         }
     }
+}
+
+async function startVideo() {
+    const videoElement = document.getElementById('videoInput');
+    if (!videoElement) {
+        console.error('Video element not found');
+        return;
+    }
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                width: 320,
+                height: 240,
+                facingMode: 'user'
+            } 
+        });
+        videoElement.srcObject = stream;
+        
+        // Wait for video to be ready
+        await new Promise((resolve) => {
+            videoElement.onloadedmetadata = () => {
+                videoElement.play()
+                    .then(resolve)
+                    .catch(err => {
+                        console.error('Error playing video:', err);
+                        if (emotionEmoji) emotionEmoji.alt = "Video play error: " + err.name;
+                    });
+            };
+        });
+
+        // Start face detection once video is playing
+        startFaceDetection();
+    } catch (err) {
+        console.error('Error accessing webcam:', err);
+        const emotionEmoji = document.getElementById('emotionEmoji');
+        if (emotionEmoji) {
+            emotionEmoji.alt = "Webcam error: " + err.name;
+            emotionEmoji.src = "assets/neutral.png";
+        }
+    }
+}
+
+function startFaceDetection() {
+    const video = document.getElementById('videoInput');
+    const emotionEmoji = document.getElementById('emotionEmoji');
+    const emotionText = document.getElementById('emotionText');
+    
+    if (!video || !emotionEmoji || !emotionText) {
+        console.error('Required elements not found');
+        return;
+    }
+
+    const emojiMap = {
+        happy: 'assets/happy.png',
+        sad: 'assets/sad.png',
+        neutral: 'assets/neutral.png',
+        angry: 'assets/angry.png',
+        fearful: 'assets/fearful.png',
+        disgusted: 'assets/disgusted.png',
+        surprised: 'assets/surprised.png'
+    };
+
+    let lastEmotion = 'neutral';
+    let emotionChangeCount = 0;
+    const EMOTION_CHANGE_THRESHOLD = 3; // Number of consistent detections before updating display
+
+    async function detectEmotion() {
+        if (video.paused || video.ended) {
+            return;
+        }
+
+        try {
+            const detections = await faceapi.detectAllFaces(
+                video, 
+                new faceapi.TinyFaceDetectorOptions()
+            ).withFaceExpressions();
+
+            if (detections.length > 0) {
+                const expressions = detections[0].expressions;
+                let dominantEmotion = 'neutral';
+                let maxScore = expressions.neutral;
+
+                Object.entries(expressions).forEach(([emotion, score]) => {
+                    if (score > maxScore) {
+                        maxScore = score;
+                        dominantEmotion = emotion;
+                    }
+                });
+
+                // Only update if emotion is consistent for several frames
+                if (dominantEmotion === lastEmotion) {
+                    emotionChangeCount++;
+                    if (emotionChangeCount >= EMOTION_CHANGE_THRESHOLD) {
+                        updateEmotionDisplay(dominantEmotion);
+                    }
+                } else {
+                    emotionChangeCount = 1;
+                    lastEmotion = dominantEmotion;
+                }
+            } else {
+                // No face detected
+                if (emotionEmoji.alt !== 'neutral (no face)') {
+                    updateEmotionDisplay('neutral');
+                    emotionEmoji.alt = 'neutral (no face)';
+                }
+            }
+        } catch (err) {
+            console.error('Error in face detection:', err);
+        }
+
+        // Continue detection loop
+        requestAnimationFrame(detectEmotion);
+    }
+
+    function updateEmotionDisplay(emotion) {
+        if (emotionEmoji && emotionText) {
+            emotionEmoji.src = emojiMap[emotion] || 'assets/neutral.png';
+            emotionText.textContent = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+            emotionEmoji.alt = emotion;
+        }
+    }
+
+    // Start the detection loop
+    detectEmotion();
+}
