@@ -810,7 +810,7 @@ function getCurrentConversation() {
 }
 
 async function loadModelsAndStart() {
-    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/models';
+    const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/0.22.2/weights/';
     try {
         console.log('Loading face-api models...');
         await Promise.all([
