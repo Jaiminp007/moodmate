@@ -40,7 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Set current user and login status
             const currentUser = {
                 ...user,
-                isLoggedIn: true
+                isLoggedIn: true,
+                // Initialize conversationCredits if it's undefined or null
+                conversationCredits: user.conversationCredits === undefined || user.conversationCredits === null ? 10 : user.conversationCredits
             };
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             console.log('Login successful:', currentUser);
@@ -89,7 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
             email,
             password,
             isLoggedIn: true,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            conversationCredits: 10 // Assign 10 free credits to new users
         };
 
         // Add to users array and save

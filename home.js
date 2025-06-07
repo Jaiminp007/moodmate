@@ -82,6 +82,34 @@ function handleLogout() {
   window.location.href = 'login.html';
 }
 
+// Function to create a new user with default credits
+function createNewUser(email, password) {
+    const users = JSON.parse(localStorage.getItem('users')) || [];
+    const newUser = {
+        email: email,
+        password: password, // In a real app, hash this!
+        isLoggedIn: true,
+        conversationCredits: 10 // Default free credits
+    };
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
+    console.log(`New user ${email} created with 10 conversation credits.`);
+    return newUser;
+}
+
+// Function to update the current user's data in localStorage
+function updateCurrentUser(updatedUserData) {
+    localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
+    // Also update in the main users array
+    const allUsers = JSON.parse(localStorage.getItem('users')) || [];
+    const userIndex = allUsers.findIndex(user => user.email === updatedUserData.email);
+    if (userIndex !== -1) {
+        allUsers[userIndex] = updatedUserData;
+        localStorage.setItem('users', JSON.stringify(allUsers));
+    }
+}
+
 // Function to handle account deletion
 function handleDeleteAccount() {
   if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
@@ -145,6 +173,79 @@ function saveMessageToConversation(role, content, analysis = null) {
     console.log('=== saveMessageToConversation completed ===');
 }
 
+// Function to check and decrement conversation credits (now handles both logged-in and guest)
+function checkAndDecrementCredits() {
+    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+    if (currentUser && currentUser.isLoggedIn) {
+        // Logged-in user's credits
+        if (currentUser.conversationCredits === undefined || currentUser.conversationCredits === null) {
+            console.log('checkAndDecrementCredits: Logged-in user has no conversationCredits property, initializing to 10.');
+            currentUser.conversationCredits = 10;
+            updateCurrentUser(currentUser);
+        }
+
+        if (currentUser.conversationCredits > 0) {
+            currentUser.conversationCredits--;
+            updateCurrentUser(currentUser);
+            console.log(`checkAndDecrementCredits: Logged-in user conversation started. Credits remaining: ${currentUser.conversationCredits}`);
+            return true;
+        } else {
+            console.log(`checkAndDecrementCredits: Logged-in user credits exhausted (${currentUser.conversationCredits}). Redirecting to login.html`);
+            alert('You have used all your free conversations. Please log in or create an account to continue.');
+            window.location.href = 'login.html';
+            return false;
+        }
+    } else {
+        // Guest user's credits
+        let guestCredits = parseInt(localStorage.getItem('guestConversationCredits') || '0', 10);
+        console.log(`checkAndDecrementCredits: Guest credit check. Current guestCredits from localStorage: ${guestCredits}`);
+
+        if (guestCredits === undefined || guestCredits === null || isNaN(guestCredits) || guestCredits <= 0) {
+            // This block handles the case where ensureGuestCredits might have failed or credits were manually set to 0
+            console.log('checkAndDecrementCredits: Guest credits are 0 or invalid. Attempting to re-initialize to 10 for one last chance or redirect.');
+            // If we are already here, and credits are 0, it means they are exhausted. Redirect.
+            console.log(`checkAndDecrementCredits: Guest credits exhausted (${guestCredits}). Redirecting to login.html`);
+            alert('You have used all your free conversations. Please log in or create an account to continue.');
+            window.location.href = 'login.html';
+            return false;
+        }
+
+        if (guestCredits > 0) {
+            guestCredits--;
+            localStorage.setItem('guestConversationCredits', guestCredits);
+            console.log(`checkAndDecrementCredits: Guest conversation started. Credits remaining: ${guestCredits}`);
+            return true;
+        } else { // This else should ideally not be reached if the above if (guestCredits <= 0) handles it.
+            console.log(`checkAndDecrementCredits: Fallback: Guest credits exhausted (${guestCredits}). Redirecting to login.html`);
+            alert('You have used all your free conversations. Please log in or create an account to continue.');
+            window.location.href = 'login.html';
+            return false;
+        }
+    }
+}
+
+// New function to ensure guest credits are initialized
+function ensureGuestCredits() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser && currentUser.isLoggedIn) {
+        console.log('ensureGuestCredits: User is logged in, skipping guest credit check.');
+        return; // Only for guests
+    }
+
+    let guestCredits = localStorage.getItem('guestConversationCredits');
+    console.log(`ensureGuestCredits: Raw guestCredits from localStorage: '${guestCredits}'`);
+
+    // If guestCredits is null or 0, re-initialize to 10 for a fresh start for a guest
+    if (guestCredits === null || parseInt(guestCredits, 10) <= 0) {
+        console.log('ensureGuestCredits: Initializing/Resetting guestConversationCredits to 10 for guest.');
+        localStorage.setItem('guestConversationCredits', '10');
+    } else {
+        console.log(`ensureGuestCredits: Guest credits found: ${guestCredits}.`);
+    }
+    console.log('ensureGuestCredits: Final guest credits after initialization check:', localStorage.getItem('guestConversationCredits'));
+}
+
 // Function to get user customization summary from localStorage
 function getUserCustomisationSummary() {
     const responseLength = localStorage.getItem('responseLength') || 'short';
@@ -194,20 +295,18 @@ function speakText(text) {
 
         utterance.onend = function() {
             console.log('Speech ended. Current state:', currentState);
+            // Always transition to LISTENING after AI speaks
             currentState = states.LISTENING;
-            if (mainBubble) {
+             if (mainBubble) {
                 mainBubble.textContent = 'Listening...';
                 mainBubble.classList.remove('speaking');
                 if (bubbleGroup) bubbleGroup.classList.add('listening');
             }
-            if (recognition && currentState === states.LISTENING) {
-                try {
-                    recognition.start();
-                    console.log('Recognition restarted automatically.');
-                } catch (e) {
-                    console.error('Error restarting recognition:', e);
-                    stopCurrentProcess();
-                }
+            // Instead of directly restarting recognition, call startListening
+            // This ensures checkAndDecrementCredits is called for the next user turn
+            if (recognition) { // Ensure recognition object exists before attempting to start
+                console.log('Calling startListening() from utterance.onend to re-enable.');
+                startListening();
             }
         };
 
@@ -388,7 +487,7 @@ async function startAudioProcessing() {
      if (mainBubble) mainBubble.style.transform = 'scale(1.0)';
      if (bubbleGroup) bubbleGroup.classList.remove('listening', 'speaking');
 
-     console.log('Audio processing stopped.');
+            console.log('Audio processing stopped.');
      console.log('--- stopAudioProcessing finished ---');
      console.log('Final state:', { audioContext: audioContext ? audioContext.state : null, stream: stream ? stream.active : null, analyser: analyser !== null, source: source !== null });
 }
@@ -544,8 +643,10 @@ function initializeRecognition() {
         recognition.onend = function() {
              console.log('recognition.onend triggered. Current state:', currentState);
          if (currentState === states.LISTENING) {
-              console.log('Recognition ended without result. Resetting.');
-              stopCurrentProcess();
+              console.log('Recognition ended without result. Calling startListening() to re-enable.');
+              // If recognition ended while we were expecting input, try to restart listening process
+              // This ensures checkAndDecrementCredits is re-evaluated
+              startListening(); // This should handle the credit check and restart
          } else if (currentState === states.PROCESSING || currentState === states.SPEAKING) {
              console.log(`Recognition ended as expected in state: ${currentState}`);
          } else {
@@ -564,8 +665,14 @@ function initializeRecognition() {
 
 // Function to start the listening process
 async function startListening() {
-    console.log('Attempting to start listening. Current state:', currentState);
+    console.log('startListening: Attempting to start listening.');
     
+    // Check and decrement credits before starting to listen
+    if (!checkAndDecrementCredits()) {
+        stopCurrentProcess(states.ERROR, 'Credits depleted'); // Stop if no credits
+        return;
+    }
+
     // Only start if we're in IDLE or ERROR state
     if (currentState === states.IDLE || currentState === states.ERROR) {
         try {
@@ -617,24 +724,35 @@ window.onclick = function(event) {
 
 // On page load...
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if user is logged in
-    const checkUserLoggedIn = () => {
-        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (!currentUser || !currentUser.isLoggedIn) {
-            window.location.href = 'login.html';
-            return false;
-        }
-        return true;
-    };
+    // THIS BLOCK WAS CAUSING IMMEDIATE REDIRECTION AND IS NOW REMOVED.
+    // const checkUserLoggedIn = () => {
+    //     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    //     if (!currentUser || !currentUser.isLoggedIn) {
+    //         window.location.href = 'login.html';
+    //         return false;
+    //     }
+    //     return true;
+    // };
 
-    if (!checkUserLoggedIn()) {
-        return;
-    }
+    // if (!checkUserLoggedIn()) {
+    //     return;
+    // }
+
+    // Ensure guest credits are handled before any conversation starts
+    ensureGuestCredits();
 
     // Initialize a new conversation if none exists
     const convos = getConversations();
-    if (convos.length === 0) {
-        console.log('No conversations found, creating initial conversation');
+    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    let guestCredits = parseInt(localStorage.getItem('guestConversationCredits') || '0', 10);
+
+    // Only create a new conversation for guests if they have credits AND no existing conversations
+    // Logged-in users are assumed to have ongoing conversations or will start a new one on demand
+    if (!currentUser && convos.length === 0 && guestCredits > 0) {
+        console.log('Guest: No conversations found and credits available, creating initial conversation');
+        startNewConversation();
+    } else if (currentUser && convos.length === 0) {
+        console.log('Logged-in user: No conversations found, creating initial conversation');
         startNewConversation();
     }
 
@@ -699,7 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (emotionDisplay) emotionDisplay.style.display = 'block';
                 if (typeof faceapi !== 'undefined') {
                      loadModelsAndStart();
-                } else {
+                    } else {
                      console.error('face-api.js is not loaded. Cannot start face tracking.');
                      const emotionEmojiElement = document.getElementById('emotionEmoji');
                      if (emotionEmojiElement) {
@@ -707,7 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
                          emotionEmojiElement.src = "assets/neutral.png";
                      }
                  }
-            } else {
+                } else {
                 // If disabling, stop the video stream
                 console.log('Attempting to stop face tracking...');
                 const videoElementForStop = document.getElementById('videoInput');
@@ -944,7 +1062,7 @@ function startFaceDetection() {
                     if (emotionChangeCount >= EMOTION_CHANGE_THRESHOLD) {
                         updateEmotionDisplay(dominantEmotion);
                     }
-                } else {
+    } else {
                     emotionChangeCount = 1;
                     lastEmotion = dominantEmotion;
                 }
