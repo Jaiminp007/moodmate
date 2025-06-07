@@ -199,25 +199,16 @@ function checkAndDecrementCredits() {
     } else {
         // Guest user's credits
         let guestCredits = parseInt(localStorage.getItem('guestConversationCredits') || '0', 10);
-        console.log(`checkAndDecrementCredits: Guest credit check. Current guestCredits from localStorage: ${guestCredits}`);
-
-        if (guestCredits === undefined || guestCredits === null || isNaN(guestCredits) || guestCredits <= 0) {
-            // This block handles the case where ensureGuestCredits might have failed or credits were manually set to 0
-            console.log('checkAndDecrementCredits: Guest credits are 0 or invalid. Attempting to re-initialize to 10 for one last chance or redirect.');
-            // If we are already here, and credits are 0, it means they are exhausted. Redirect.
-            console.log(`checkAndDecrementCredits: Guest credits exhausted (${guestCredits}). Redirecting to login.html`);
-            alert('You have used all your free conversations. Please log in or create an account to continue.');
-            window.location.href = 'login.html';
-            return false;
-        }
+        console.log(`checkAndDecrementCredits: Guest credit check during AI response. Current guestCredits from localStorage: ${guestCredits}`);
 
         if (guestCredits > 0) {
             guestCredits--;
             localStorage.setItem('guestConversationCredits', guestCredits);
-            console.log(`checkAndDecrementCredits: Guest conversation started. Credits remaining: ${guestCredits}`);
+            console.log(`checkAndDecrementCredits: Guest conversation credit consumed. Credits remaining: ${guestCredits}`);
             return true;
-        } else { // This else should ideally not be reached if the above if (guestCredits <= 0) handles it.
-            console.log(`checkAndDecrementCredits: Fallback: Guest credits exhausted (${guestCredits}). Redirecting to login.html`);
+        } else {
+            // Credits are 0 or invalid at the point of AI response
+            console.log(`checkAndDecrementCredits: Guest credits exhausted (${guestCredits}). Redirecting to login.html`);
             alert('You have used all your free conversations. Please log in or create an account to continue.');
             window.location.href = 'login.html';
             return false;
@@ -225,7 +216,7 @@ function checkAndDecrementCredits() {
     }
 }
 
-// New function to ensure guest credits are initialized
+// New function to ensure guest credits are initialized and handle immediate redirect on exhaustion
 function ensureGuestCredits() {
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (currentUser && currentUser.isLoggedIn) {
@@ -236,12 +227,12 @@ function ensureGuestCredits() {
     let guestCredits = localStorage.getItem('guestConversationCredits');
     console.log(`ensureGuestCredits: Raw guestCredits from localStorage: '${guestCredits}'`);
 
-    // If guestCredits is null or 0, re-initialize to 10 for a fresh start for a guest
-    if (guestCredits === null || parseInt(guestCredits, 10) <= 0) {
-        console.log('ensureGuestCredits: Initializing/Resetting guestConversationCredits to 10 for guest.');
+    if (guestCredits === null) {
+        console.log('ensureGuestCredits: Initializing guestConversationCredits to 10 for new guest.');
         localStorage.setItem('guestConversationCredits', '10');
-    } else {
-        console.log(`ensureGuestCredits: Guest credits found: ${guestCredits}.`);
+    } else if (parseInt(guestCredits, 10) <= 0) {
+        console.log('ensureGuestCredits: Guest credits exhausted, redirecting to login on page load.');
+        window.location.href = 'login.html';
     }
     console.log('ensureGuestCredits: Final guest credits after initialization check:', localStorage.getItem('guestConversationCredits'));
 }
@@ -286,7 +277,7 @@ function speakText(text) {
         utterance.onstart = function() {
             console.log('Speech started. Current state:', currentState);
             currentState = states.SPEAKING;
-            if (mainBubble) {
+             if (mainBubble) {
                 mainBubble.textContent = 'Speaking...';
                 mainBubble.classList.add('speaking');
                 if (bubbleGroup) bubbleGroup.classList.remove('listening');
@@ -295,18 +286,20 @@ function speakText(text) {
 
         utterance.onend = function() {
             console.log('Speech ended. Current state:', currentState);
-            // Always transition to LISTENING after AI speaks
             currentState = states.LISTENING;
              if (mainBubble) {
                 mainBubble.textContent = 'Listening...';
                 mainBubble.classList.remove('speaking');
                 if (bubbleGroup) bubbleGroup.classList.add('listening');
             }
-            // Instead of directly restarting recognition, call startListening
-            // This ensures checkAndDecrementCredits is called for the next user turn
-            if (recognition) { // Ensure recognition object exists before attempting to start
-                console.log('Calling startListening() from utterance.onend to re-enable.');
-                startListening();
+            if (recognition && currentState === states.LISTENING) {
+                try {
+                    recognition.start();
+                    console.log('Recognition restarted automatically.');
+                } catch (e) {
+                    console.error('Error restarting recognition:', e);
+                    stopCurrentProcess();
+                }
             }
         };
 
@@ -625,6 +618,12 @@ function initializeRecognition() {
                     content: aiResponseContent,
                     analysis: aiAnalysisData
                 });
+                // DEDUCT CREDIT HERE, AFTER SUCCESSFUL AI RESPONSE
+                if (!checkAndDecrementCredits()) {
+                    console.log('Credits exhausted after AI response, stopping process.');
+                    stopCurrentProcess(states.ERROR, 'Credits depleted');
+                    return; // Stop further processing if no credits
+                }
                 saveMessageToConversation('assistant', aiResponseContent, aiAnalysisData);
                 speakText(aiResponseContent);
             } else {
@@ -643,10 +642,8 @@ function initializeRecognition() {
         recognition.onend = function() {
              console.log('recognition.onend triggered. Current state:', currentState);
          if (currentState === states.LISTENING) {
-              console.log('Recognition ended without result. Calling startListening() to re-enable.');
-              // If recognition ended while we were expecting input, try to restart listening process
-              // This ensures checkAndDecrementCredits is re-evaluated
-              startListening(); // This should handle the credit check and restart
+              console.log('Recognition ended without result. Resetting.');
+              stopCurrentProcess();
          } else if (currentState === states.PROCESSING || currentState === states.SPEAKING) {
              console.log(`Recognition ended as expected in state: ${currentState}`);
          } else {
@@ -667,14 +664,32 @@ function initializeRecognition() {
 async function startListening() {
     console.log('startListening: Attempting to start listening.');
     
-    // Check and decrement credits before starting to listen
-    if (!checkAndDecrementCredits()) {
-        stopCurrentProcess(states.ERROR, 'Credits depleted'); // Stop if no credits
-        return;
+    // Before starting to listen, check if any credits are available AT ALL for current user/guest
+    // This prevents starting a conversation if credits are 0.
+    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    let hasCredits = false;
+
+    if (currentUser && currentUser.isLoggedIn) {
+        hasCredits = (currentUser.conversationCredits > 0);
+        if (!hasCredits) {
+            console.log('startListening: Logged-in user has 0 credits. Redirecting to login.');
+            alert('You have used all your free conversations. Please log in or create an account to continue.');
+            window.location.href = 'login.html';
+            return;
+        }
+    } else {
+        let guestCredits = parseInt(localStorage.getItem('guestConversationCredits') || '0', 10);
+        hasCredits = (guestCredits > 0);
+        if (!hasCredits) {
+            console.log('startListening: Guest user has 0 credits. Redirecting to login.');
+            alert('You have used all your free conversations. Please log in or create an account to continue.');
+            window.location.href = 'login.html';
+            return;
+        }
     }
 
-    // Only start if we're in IDLE or ERROR state
-    if (currentState === states.IDLE || currentState === states.ERROR) {
+    // Only start if we're in IDLE or ERROR state and have credits
+    if ((currentState === states.IDLE || currentState === states.ERROR) && hasCredits) {
         try {
             currentState = states.LISTENING;
 
@@ -703,8 +718,12 @@ async function startListening() {
             stopCurrentProcess(states.ERROR, 'Voice input failed to start');
         }
     } else {
-        console.log(`Cannot start listening, already in state: ${currentState}. Stopping current process.`);
-        stopCurrentProcess();
+        console.log(`Cannot start listening, already in state: ${currentState} or no credits.`);
+        if (!hasCredits) {
+            stopCurrentProcess(states.ERROR, 'No Credits'); // Ensure bubble updates
+        } else {
+            stopCurrentProcess();
+        }
     }
 }
 
@@ -817,7 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (emotionDisplay) emotionDisplay.style.display = 'block';
                 if (typeof faceapi !== 'undefined') {
                      loadModelsAndStart();
-                    } else {
+                } else {
                      console.error('face-api.js is not loaded. Cannot start face tracking.');
                      const emotionEmojiElement = document.getElementById('emotionEmoji');
                      if (emotionEmojiElement) {
