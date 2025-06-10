@@ -14,6 +14,7 @@
   --modal-text-color: var(--navy);
   --toggle-bg: var(--white);
   --toggle-knob: var(--yellow);
+  --action-icon-invert: 0%; /* Dark mode: no invert */
 }
 
 body.light-mode {
@@ -27,6 +28,7 @@ body.light-mode {
   --modal-text-color: var(--navy);
   --toggle-bg: var(--navy);
   --toggle-knob: var(--white);
+  --action-icon-invert-light: 100%; /* Light mode: invert to make dark icons visible on light background */
 }
 
 html, body {
@@ -209,6 +211,7 @@ body {
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
+  min-height: 400px;
 }
 
 .top-box, .bottom-box {
@@ -223,7 +226,86 @@ body {
 }
 
 .conversation-item {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  padding: 15px;
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.conversation-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.conversation-title-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.conversation-title-container h3 {
+  margin: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 10px;
+}
+
+.conversation-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.conversation-item p {
+  margin: 0;
+  color: var(--navy);
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+.conversation-action-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; /* Icon size */
+    height: 24px; /* Icon size */
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.conversation-action-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: invert(var(--action-icon-invert, 0%)); /* Default for dark mode, no invert */
+}
+
+.conversation-action-btn:hover {
+    transform: scale(1.1);
+    opacity: 0.8;
+}
+
+.conversation-action-btn:focus {
+    outline: 2px solid var(--yellow);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Light mode specific styles for icons */
+body.light-mode .conversation-action-btn img {
+    filter: invert(var(--action-icon-invert-light, 100%)); /* Invert for light mode */
 }
 
 h2 {
@@ -330,10 +412,20 @@ body.light-mode .page-heading {
   color: var(--modal-text-color);
   cursor: pointer;
   transition: color 0.2s;
+  line-height: 1;
+  padding: 0;
+  background: none;
+  border: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-modal:hover {
   color: var(--yellow);
+  transform: scale(1.1);
 }
 
 .settings-modal-content h2 {
@@ -486,139 +578,172 @@ body.light-mode .page-heading {
 .conversations-modal {
     display: flex;
     position: fixed;
-    z-index: 1000;
-    left: 0;
     top: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(27, 38, 59, 0.6);
-    align-items: center;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
     justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
 }
 
 .conversations-modal-content {
-    background: var(--modal-bg-color);
-    color: var(--modal-text-color);
-    margin: auto;
-    padding: 32px 24px 24px 24px;
-    border-radius: 18px;
+    background-color: var(--white);
+    padding: 24px;
+    border-radius: 12px;
     width: 90%;
     max-width: 800px;
     max-height: 80vh;
-    position: relative;
-    box-shadow: 0 8px 32px rgba(27,38,59,0.18);
     overflow-y: auto;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.conversations-modal-content h2 {
-    margin-top: 0;
-    margin-bottom: 24px;
-    text-align: center;
-    color: var(--navy);
-}
-
-.all-conversations-list {
+.modal-header {
     display: flex;
-    flex-direction: column;
-    gap: 24px;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-right: 30px; /* Make room for the close button */
 }
 
-.conversation-detail {
-    background: var(--white);
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 2px 8px rgba(27,38,59,0.1);
-}
-
-.conversation-detail h3 {
-    margin: 0 0 16px 0;
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
     color: var(--navy);
-    font-size: 1.1rem;
+    flex: 1;
+}
+
+.close-modal {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--navy);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1;
+    padding: 0;
+    background: none;
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--white);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.close-modal:hover {
+    color: var(--yellow);
+    transform: scale(1.1);
+    background-color: var(--white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.close-modal:focus {
+    outline: 2px solid var(--yellow);
+    outline-offset: 2px;
+}
+
+/* Light mode specific styles */
+body.light-mode .conversations-modal-content {
+    background-color: var(--navy);
+}
+
+body.light-mode .modal-header h2 {
+    color: var(--white);
+}
+
+body.light-mode .close-modal {
+    color: var(--white);
+    background-color: var(--navy);
+}
+
+body.light-mode .close-modal:hover {
+    color: var(--yellow);
+    background-color: var(--navy);
 }
 
 .conversation-messages {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+    margin: 20px 0;
 }
 
 .message {
-    padding: 12px;
-    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
     max-width: 80%;
+    padding: 12px;
+    border-radius: 12px;
+    position: relative;
 }
 
 .message.user {
-    background: var(--navy);
-    color: var(--white);
     align-self: flex-end;
+    background-color: var(--navy);
+    color: var(--white);
 }
 
 .message.assistant {
-    background: var(--yellow);
-    color: var(--navy);
     align-self: flex-start;
-}
-
-.close-modal {
-    display: block;
-    margin: 24px auto 0;
-    padding: 8px 24px;
-    background: var(--navy);
-    color: var(--white);
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.3s ease;
-}
-
-.close-modal:hover {
-    background: var(--yellow);
+    background-color: var(--yellow);
     color: var(--navy);
+}
+
+.message-content {
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.message-timestamp {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    align-self: flex-end;
+}
+
+.message-feeling {
+    font-size: 0.9rem;
+    margin-top: 4px;
+    opacity: 0.9;
 }
 
 /* Light mode specific styles */
+body.light-mode .conversation-item {
+    background-color: var(--navy);
+}
+
+body.light-mode .conversation-item h3,
+body.light-mode .conversation-item p {
+    color: var(--white);
+}
+
 body.light-mode .conversations-modal-content {
-    background: var(--white);
-}
-
-body.light-mode .conversation-detail {
-    background: var(--navy);
-}
-
-body.light-mode .conversation-detail h3 {
+    background-color: var(--navy);
     color: var(--white);
 }
 
 body.light-mode .message.user {
-    background: var(--yellow);
+    background-color: var(--yellow);
     color: var(--navy);
 }
 
 body.light-mode .message.assistant {
-    background: var(--navy);
-    color: var(--white);
-}
-
-body.light-mode .close-modal {
-    background: var(--yellow);
-    color: var(--navy);
-}
-
-body.light-mode .close-modal:hover {
-    background: var(--navy);
+    background-color: var(--navy);
     color: var(--white);
 }
 
 @media (max-width: 700px) {
     .conversations-modal-content {
         width: 95%;
-        padding: 20px 16px 16px 16px;
-    }
-
-    .conversation-detail {
-        padding: 12px;
+        padding: 16px;
     }
 
     .message {
@@ -626,15 +751,19 @@ body.light-mode .close-modal:hover {
         padding: 10px;
     }
 
-    .close-modal {
-        padding: 6px 20px;
+    .message-content {
         font-size: 0.9rem;
+    }
+
+    .message-timestamp {
+        font-size: 0.7rem;
     }
 }
 
 #emotion-chart {
   width: 100%;
   height: 100%;
+  min-height: 300px;
 }
 
 /* New styles for chart container to ensure it takes available space */
@@ -646,4 +775,180 @@ body.light-mode .close-modal:hover {
     flex: 1;
     max-height: 100%;
     box-sizing: border-box;
+}
+
+.conversation-detail {
+    background-color: var(--white);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.conversation-detail:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: var(--yellow);
+}
+
+.conversation-detail:focus {
+    outline: none;
+    border-color: var(--yellow);
+    box-shadow: 0 0 0 2px var(--yellow);
+}
+
+.conversation-detail h3 {
+    margin: 0 0 8px 0;
+    color: var(--navy);
+    font-size: 1.1rem;
+}
+
+.conversation-detail p {
+    margin: 4px 0;
+    color: var(--navy);
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.conversation-detail .message-count {
+    color: var(--yellow);
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+/* Light mode specific styles */
+body.light-mode .conversation-detail {
+    background-color: var(--navy);
+}
+
+body.light-mode .conversation-detail h3,
+body.light-mode .conversation-detail p {
+    color: var(--white);
+}
+
+body.light-mode .conversation-detail .message-count {
+    color: var(--yellow);
+}
+
+/* Lock Animation Styles */
+.conversation-list-locked {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+    min-height: 200px;
+    background-color: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.lock-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 1;
+    filter: invert(var(--action-icon-invert, 0%));
+    z-index: 5;
+}
+
+.lock-message {
+    color: var(--navy);
+    font-size: 1rem;
+    margin: 0;
+    opacity: 0.8;
+    position: relative;
+    z-index: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* Light mode specific styles */
+body.light-mode .conversation-list-locked {
+    background-color: var(--navy);
+}
+
+body.light-mode .lock-message {
+    color: var(--white);
+    background-color: rgba(27, 38, 59, 0.9);
+}
+
+body.light-mode .lock-image {
+    filter: invert(var(--action-icon-invert-light, 100%));
+}
+
+.bottom-box {
+  position: relative;
+  overflow: hidden;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.conversation-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+  color: var(--navy);
+  margin-bottom: 8px;
+  max-height: 150px;
+}
+
+.bottom-box-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.bottom-box .btn-primary,
+.bottom-box .delete-btn {
+  margin-top: 0;
+}
+
+.lock-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 1;
+  filter: invert(var(--action-icon-invert, 0%));
+  z-index: 1;
+  pointer-events: none;
+}
+
+.lock-message {
+  color: var(--navy);
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.8;
+  position: relative;
+  z-index: 2;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* Light mode specific styles */
+body.light-mode .lock-message {
+  color: var(--white);
+  background-color: rgba(27, 38, 59, 0.9);
+}
+
+body.light-mode .lock-image {
+  filter: invert(var(--action-icon-invert-light, 100%));
 } 

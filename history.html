@@ -51,8 +51,10 @@
               -->
               <!-- Add more conversation items as needed -->
             </div>
-            <button id="view-convos-btn" class="btn-primary" style="margin-top: 10px;">View All Conversations</button>
-            <button id="delete-all-convos-btn" class="delete-btn" style="margin-top: 10px;">Delete All Conversations</button>
+            <div class="bottom-box-buttons">
+              <button id="view-convos-btn" class="btn-primary">View All Conversations</button>
+              <button id="delete-all-convos-btn" class="delete-btn">Delete All Conversations</button>
+            </div>
           </div>
         </div>
       </div>
@@ -65,38 +67,15 @@
   <!-- Settings Modal -->
   <div id="settings-modal" class="settings-modal">
     <div class="settings-modal-content">
-      <span class="close-modal" id="close-settings">&times;</span>
+      <button class="close-modal" id="close-settings">&times;</button>
       <h2>Settings</h2>
       <div class="setting-item">
         <label for="darkModeToggleModal">Dark Mode</label>
-        <div class="toggle-switch modal-toggle" id="modal-theme-toggle-container">
-          <input type="checkbox" id="darkModeToggleModal">
+        <div class="modal-toggle">
+          <input type="checkbox" id="darkModeToggleModal" checked>
           <label for="darkModeToggleModal"></label>
         </div>
       </div>
-      <div class="setting-item">
-        <label>Notifications</label>
-        <button class="btn-primary" disabled>Manage</button>
-      </div>
-      <div class="setting-item">
-        <label>Account</label>
-        <button class="btn-primary" disabled>Edit Profile</button>
-      </div>
-      <div class="setting-item">
-        <a href="privacy.html" class="settings-link settings-link-with-icon">
-          <span>Privacy Policy</span>
-          <img src="assets/external-link.png" alt="External link icon">
-        </a>
-      </div>
-      <h6>This app is not an official therapist, but a supportive companion meant to offer comfort—not professional mental health advice.</h6>
-    </div>
-  </div>
-  <!-- Conversation History Modal -->
-  <div id="convo-modal" class="settings-modal">
-    <div class="settings-modal-content" style="max-width: 700px;">
-      <span class="close-modal" id="close-convo-modal">&times;</span>
-      <h2>Past AI Conversations</h2>
-      <div id="convo-modal-content" style="max-height: 400px; overflow-y: auto;"></div>
     </div>
   </div>
   <script src="history.js"></script>

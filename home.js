@@ -26,6 +26,7 @@ let utterance = null;
 let audioContext = null;
 let animationFrameId = null;
 let stream = null; // To hold the media stream
+let voices = []; // Global array to store speech synthesis voices
 
 // Function to set the theme and update toggles
 function setTheme(isLightMode) {
@@ -38,6 +39,16 @@ function setTheme(isLightMode) {
   if (mainThemeToggle) mainThemeToggle.checked = !isLightMode;
   if (modalThemeToggle) modalThemeToggle.checked = !isLightMode;
   localStorage.setItem('lightMode', isLightMode);
+}
+
+// Function to load and populate voices in the dropdown (for home.js)
+function populateVoiceListHome() {
+    if (typeof speechSynthesis === 'undefined') {
+        console.warn('SpeechSynthesis not supported, cannot populate voices.');
+        return;
+    }
+    voices = speechSynthesis.getVoices();
+    console.log('Home.js: Populated voices.', voices.map(v => `${v.name} (${v.lang})`));
 }
 
 // Function to initialize theme based on stored preference
@@ -173,12 +184,28 @@ function saveMessageToConversation(role, content, analysis = null) {
     console.log('=== saveMessageToConversation completed ===');
 }
 
+// Function to get trigger word preference
+function getTriggerWordPreference() {
+    const triggerDetectionEnabled = localStorage.getItem('triggerDetection') === 'true';
+    const triggerWord = localStorage.getItem('triggerWord');
+    return {
+        enabled: triggerDetectionEnabled,
+        word: triggerWord ? triggerWord.toLowerCase() : null
+    };
+}
+
 // Function to check and decrement conversation credits (now handles both logged-in and guest)
 function checkAndDecrementCredits() {
     let currentUser = JSON.parse(localStorage.getItem('currentUser'));
 
     if (currentUser && currentUser.isLoggedIn) {
-        // Logged-in user's credits
+        // Check for unlimited credits based on plan
+        if (currentUser.plan === 'plus' || currentUser.plan === 'pro') {
+            console.log(`checkAndDecrementCredits: User is on ${currentUser.plan} plan, unlimited credits.`);
+            return true; // Unlimited credits for Plus and Pro plans
+        }
+
+        // Logged-in user's credits (for 'free' plan)
         if (currentUser.conversationCredits === undefined || currentUser.conversationCredits === null) {
             console.log('checkAndDecrementCredits: Logged-in user has no conversationCredits property, initializing to 10.');
             currentUser.conversationCredits = 10;
@@ -188,10 +215,10 @@ function checkAndDecrementCredits() {
         if (currentUser.conversationCredits > 0) {
             currentUser.conversationCredits--;
             updateCurrentUser(currentUser);
-            console.log(`checkAndDecrementCredits: Logged-in user conversation started. Credits remaining: ${currentUser.conversationCredits}`);
+            console.log(`checkAndDecrementCredits: Logged-in user (free plan) conversation started. Credits remaining: ${currentUser.conversationCredits}`);
             return true;
         } else {
-            console.log(`checkAndDecrementCredits: Logged-in user credits exhausted (${currentUser.conversationCredits}). Redirecting to login.html`);
+            console.log(`checkAndDecrementCredits: Logged-in user (free plan) credits exhausted (${currentUser.conversationCredits}). Redirecting to login.html`);
             alert('You have used all your free conversations. Please log in or create an account to continue.');
             window.location.href = 'login.html';
             return false;
@@ -263,39 +290,74 @@ function speakText(text) {
 
         utterance = new SpeechSynthesisUtterance(text);
 
-        const voices = synthesis.getVoices();
-        let englishVoice = voices.find(voice => voice.lang === 'en-US' && voice.name.includes('female'));
-        if (!englishVoice) {
-            englishVoice = voices.find(voice => voice.lang === 'en-US');
+        // Ensure voices are loaded; if not, try to load them
+        if (voices.length === 0) {
+            populateVoiceListHome();
         }
-        if (englishVoice) {
-            utterance.voice = englishVoice;
+
+        let selectedVoice = null;
+
+        const savedVoiceURI = localStorage.getItem('selectedAiVoice');
+        console.log('Home.js: Attempting to use saved voice URI:', savedVoiceURI);
+        console.log('Home.js: Available voices URIs:', voices.map(v => v.voiceURI));
+
+        if (savedVoiceURI) {
+            selectedVoice = voices.find(voice => voice.voiceURI === savedVoiceURI);
+            if (selectedVoice) {
+                console.log('Home.js: Using saved AI voice:', selectedVoice.name);
+            } else {
+                console.warn('Home.js: Saved AI voice not found. Falling back to default selection.');
+            }
+        }
+        
+        // If no saved voice or saved voice not found, try to find a suitable default
+        if (!selectedVoice) {
+            selectedVoice = voices.find(voice => voice.lang.startsWith('en-') && voice.name.includes('female'));
+            if (!selectedVoice) {
+                selectedVoice = voices.find(voice => voice.lang.startsWith('en-'));
+            }
+            if (!selectedVoice) {
+                console.warn('Home.js: No English voice found, using browser default.');
+            }
+        }
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
         } else {
-            console.warn('No English voice found, using default.');
+            console.warn('Home.js: No suitable voice found, using system default.');
         }
 
         utterance.onstart = function() {
             console.log('Speech started. Current state:', currentState);
             currentState = states.SPEAKING;
-             if (mainBubble) {
+            if (mainBubble) {
                 mainBubble.textContent = 'Speaking...';
                 mainBubble.classList.add('speaking');
                 if (bubbleGroup) bubbleGroup.classList.remove('listening');
+            }
+            // Stop speech recognition while AI is speaking
+            if (recognition) {
+                try {
+                    console.log('Recognition is assumed to be stopped by onresult; not stopping again in onstart.');
+                } catch (e) {
+                    console.error('Error stopping recognition during AI speech:', e);
+                }
             }
         };
 
         utterance.onend = function() {
             console.log('Speech ended. Current state:', currentState);
             currentState = states.LISTENING;
-             if (mainBubble) {
+            if (mainBubble) {
                 mainBubble.textContent = 'Listening...';
                 mainBubble.classList.remove('speaking');
                 if (bubbleGroup) bubbleGroup.classList.add('listening');
             }
-            if (recognition && currentState === states.LISTENING) {
+            // Restart speech recognition after AI finishes speaking
+            if (recognition) {
                 try {
                     recognition.start();
-                    console.log('Recognition restarted automatically.');
+                    console.log('Recognition restarted automatically after AI speech.');
                 } catch (e) {
                     console.error('Error restarting recognition:', e);
                     stopCurrentProcess();
@@ -304,8 +366,17 @@ function speakText(text) {
         };
 
         utterance.onerror = function(event) {
-            console.error('Speech synthesis error:', event.error);
-            stopCurrentProcess(states.ERROR, `Speech Error: ${event.error}`);
+            // Only log as an error if it's not an intentional interruption
+            if (event.error !== 'interrupted') {
+                console.error('Speech synthesis error:', event.error);
+                stopCurrentProcess(states.ERROR, `Speech Error: ${event.error}`);
+            } else {
+                console.log('Speech synthesis explicitly interrupted.');
+            }
+            // Note: The 'interrupted' error is expected when synthesis is cancelled.
+            // We handle this by not setting the state to ERROR due to this specific error.
+            // Other state changes leading to cancellation (e.g., trigger word, credit depletion)
+            // will have already set the appropriate state via stopCurrentProcess.
         };
 
         synthesis.speak(utterance);
@@ -489,6 +560,11 @@ async function startAudioProcessing() {
 function stopCurrentProcess(newState = states.IDLE, message = 'Tap Here to Start') {
     console.log(`Stopping current process. Current state: ${currentState}, Transitioning to: ${newState}`);
     
+    // Finalize the current conversation if we're stopping from an active state
+    if (currentState !== states.IDLE) {
+        finalizeCurrentConversation();
+    }
+    
     // Only stop recognition if we're actually in a listening or processing state
     if (recognition && (currentState === states.LISTENING || currentState === states.PROCESSING)) {
         try {
@@ -557,33 +633,69 @@ function initializeRecognition() {
         console.log('Speech recognition started. Current state:', currentState);
     };
 
-        recognition.onresult = async function(event) {
-          const transcript = event.results[0][0].transcript;
-          console.log('User said:', transcript);
+    recognition.onresult = async (event) => {
+        const current = event.resultIndex;
+        const transcript = event.results[current][0].transcript;
+        console.log('Speech Recognition Result:', transcript);
 
-      if (recognition) {
-          try {
-             recognition.stop();
-             console.log('Recognition stopped for processing.');
-          } catch (e) {
-             console.error('Error stopping recognition:', e);
-          }
-      }
+        // Get trigger word preferences
+        let { enabled: triggerDetectionEnabled, word: triggerWord } = getTriggerWordPreference();
+        console.log('Trigger Word Preference:', { triggerDetectionEnabled, triggerWord });
 
-          const userPreferences = getUserCustomisationSummary();
-          console.log('User preferences:', userPreferences);
+        // Check user plan for Trigger Word Detection
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const userPlan = currentUser ? currentUser.plan : 'free';
 
-      saveMessageToConversation('user', transcript);
+        if (userPlan !== 'pro') {
+            console.log('Trigger Word Detection is a Pro plan feature. Disabling it for current user.');
+            triggerDetectionEnabled = false; // Override to false if not Pro plan
+        }
 
-      currentState = states.PROCESSING;
-      if (mainBubble) {
-          mainBubble.textContent = 'Processing...';
-          mainBubble.classList.remove('listening', 'speaking', 'error-state');
-          if (bubbleGroup) bubbleGroup.classList.remove('listening');
-      }
-      console.log('Transitioned to Processing state:', currentState);
+        // Check for trigger word immediately if detection is enabled
+        if (triggerDetectionEnabled && triggerWord && transcript.toLowerCase().includes(triggerWord)) {
+            console.log(`Trigger word '${triggerWord}' detected. Stopping conversation.`);
+            stopCurrentProcess(states.IDLE, 'Trigger word detected. Conversation ended.');
+            // Stop recognition immediately after trigger word detected
+            if (recognition) {
+                try {
+                    recognition.abort(); // Use abort to prevent onend from firing unexpectedly
+                    console.log('Recognition aborted due to trigger word.');
+                } catch (e) {
+                    console.error('Error aborting recognition after trigger word:', e);
+                }
+            }
+            return; // Exit the function early
+        }
 
-          try {
+        // Only proceed if not interrupted by trigger word
+        if (recognition) {
+            try {
+                recognition.stop();
+                console.log('Recognition stopped for processing.');
+            } catch (e) {
+                console.error('Error stopping recognition:', e);
+            }
+        }
+
+        const userPreferences = getUserCustomisationSummary();
+        console.log('User preferences:', userPreferences);
+
+        // Get the current emotion from the displayed text
+        const currentEmotionElement = document.getElementById('emotionText');
+        const currentEmotion = currentEmotionElement ? currentEmotionElement.textContent.toLowerCase() : 'neutral';
+        console.log('Detected current emotion for API request:', currentEmotion);
+
+        saveMessageToConversation('user', transcript);
+
+        currentState = states.PROCESSING;
+        if (mainBubble) {
+            mainBubble.textContent = 'Processing...';
+            mainBubble.classList.remove('listening', 'speaking', 'error-state');
+            if (bubbleGroup) bubbleGroup.classList.remove('listening');
+        }
+        console.log('Transitioned to Processing state:', currentState);
+
+        try {
             const response = await fetch('https://moodmate-bj4k.onrender.com/api/chat', {
               method: 'POST',
               headers: {
@@ -591,15 +703,16 @@ function initializeRecognition() {
               },
               body: JSON.stringify({
                 transcript: transcript,
-                preferences: userPreferences
+                preferences: userPreferences,
+                currentEmotion: currentEmotion
               })
             });
 
             if (!response.ok) {
               const errorDetail = await response.text();
               console.error(`Backend API error: ${response.status} - ${response.statusText}`, errorDetail);
-           stopCurrentProcess(states.ERROR, `Backend Error: ${response.status}`);
-           saveMessageToConversation('assistant', `Error: Could not get a response from the backend (Status: ${response.status}).`);
+              stopCurrentProcess(states.ERROR, `Backend Error: ${response.status}`);
+              saveMessageToConversation('assistant', `Error: Could not get a response from the backend (Status: ${response.status}).`);
               return;
             }
 
@@ -632,29 +745,36 @@ function initializeRecognition() {
                 saveMessageToConversation('assistant', 'Error: Received an empty response from the AI.');
             }
 
-          } catch (error) {
-        console.error('Error sending transcript to backend or processing response:', error);
-         stopCurrentProcess(states.ERROR, 'Network Error');
-         saveMessageToConversation('assistant', `Error: Network communication failed: ${error.message}`);
-      }
+        } catch (error) {
+            console.error('Error sending transcript to backend or processing response:', error);
+            stopCurrentProcess(states.ERROR, 'Network Error');
+            saveMessageToConversation('assistant', `Error: Network communication failed: ${error.message}`);
+        }
     };
 
-        recognition.onend = function() {
-             console.log('recognition.onend triggered. Current state:', currentState);
-         if (currentState === states.LISTENING) {
-              console.log('Recognition ended without result. Resetting.');
-              stopCurrentProcess();
-         } else if (currentState === states.PROCESSING || currentState === states.SPEAKING) {
-             console.log(`Recognition ended as expected in state: ${currentState}`);
-         } else {
-              console.warn(`recognition.onend triggered in unexpected state: ${currentState}. Performing full stop.`);
-              stopCurrentProcess();
-         }
-        };
+    recognition.onend = function() {
+        console.log('recognition.onend triggered. Current state:', currentState);
+        if (currentState === states.LISTENING) {
+            console.log('Recognition ended without result. Resetting.');
+            stopCurrentProcess();
+        } else if (currentState === states.PROCESSING || currentState === states.SPEAKING) {
+            console.log(`Recognition ended as expected in state: ${currentState}`);
+        } else {
+            console.warn(`recognition.onend triggered in unexpected state: ${currentState}. Performing full stop.`);
+            stopCurrentProcess();
+        }
+    };
 
-        recognition.onerror = function(event) {
-            console.error('Speech recognition error triggered:', event.error);
-        stopCurrentProcess(states.ERROR, `Speech Error: ${event.error}`);
+    recognition.onerror = function(event) {
+        console.error('Speech recognition error triggered:', event.error);
+        // If the error is 'aborted', it means recognition was intentionally stopped.
+        // In this case, we do NOT want to transition to an ERROR state.
+        if (event.error === 'aborted') {
+            console.log('Speech recognition explicitly aborted. No ERROR state transition.');
+        } else {
+            // For other, actual errors, transition to ERROR state
+            stopCurrentProcess(states.ERROR, `Speech Error: ${event.error}`);
+        }
     };
 
     return recognition;
@@ -662,7 +782,13 @@ function initializeRecognition() {
 
 // Function to start the listening process
 async function startListening() {
-    console.log('startListening: Attempting to start listening.');
+    console.log('=== startListening called ===');
+    console.log('Current state:', currentState);
+    
+    if (currentState === states.IDLE) {
+        // Create a new conversation when starting from IDLE state
+        startNewConversation();
+    }
     
     // Before starting to listen, check if any credits are available AT ALL for current user/guest
     // This prevents starting a conversation if credits are 0.
@@ -670,12 +796,19 @@ async function startListening() {
     let hasCredits = false;
 
     if (currentUser && currentUser.isLoggedIn) {
-        hasCredits = (currentUser.conversationCredits > 0);
-        if (!hasCredits) {
-            console.log('startListening: Logged-in user has 0 credits. Redirecting to login.');
-            alert('You have used all your free conversations. Please log in or create an account to continue.');
-            window.location.href = 'login.html';
-            return;
+        // If user is plus or pro, they have unlimited credits
+        if (currentUser.plan === 'plus' || currentUser.plan === 'pro') {
+            hasCredits = true;
+            console.log(`startListening: User is on ${currentUser.plan} plan, has unlimited credits.`);
+        } else {
+            // Free plan user credit check
+            hasCredits = (currentUser.conversationCredits > 0);
+            if (!hasCredits) {
+                console.log('startListening: Logged-in user (free plan) has 0 credits. Redirecting to login.');
+                alert('You have used all your free conversations. Please log in or create an account to continue.');
+                window.location.href = 'login.html';
+                return;
+            }
         }
     } else {
         let guestCredits = parseInt(localStorage.getItem('guestConversationCredits') || '0', 10);
@@ -732,6 +865,22 @@ window.onclick = function(event) {
   if (event.target === settingsModal) {
     closeSettingsModal();
   }
+
+  // Get references to the theme toggle elements and their labels
+  const mainThemeToggleElement = document.getElementById('theme-toggle');
+  const modalThemeToggleElement = document.getElementById('darkModeToggleModal');
+  const mainThemeToggleLabel = document.querySelector('label[for="theme-toggle"]');
+  const modalThemeToggleLabel = document.querySelector('label[for="darkModeToggleModal"]');
+
+  // Check if the click target or its parent is one of the theme toggles or their labels
+  if (event.target === mainThemeToggleElement || event.target === modalThemeToggleElement ||
+      event.target === mainThemeToggleLabel || event.target === modalThemeToggleLabel ||
+      mainThemeToggleElement.contains(event.target) || modalThemeToggleElement.contains(event.target) ||
+      (mainThemeToggleLabel && mainThemeToggleLabel.contains(event.target)) || (modalThemeToggleLabel && modalThemeToggleLabel.contains(event.target))) {
+      // If the click is on a theme toggle or its label, do nothing (do not stop the process)
+      return;
+  }
+
   const isClickInsideBubbleGroup = bubbleGroup && bubbleGroup.contains(event.target);
   const isClickInsideSettingsModal = settingsModal && settingsModal.contains(event.target);
 
@@ -757,12 +906,15 @@ document.addEventListener('DOMContentLoaded', () => {
     //     return;
     // }
 
+    // Declare currentUser and userPlan once at the top of DOMContentLoaded
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userPlan = currentUser ? currentUser.plan : 'free';
+
     // Ensure guest credits are handled before any conversation starts
     ensureGuestCredits();
 
     // Initialize a new conversation if none exists
     const convos = getConversations();
-    let currentUser = JSON.parse(localStorage.getItem('currentUser'));
     let guestCredits = parseInt(localStorage.getItem('guestConversationCredits') || '0', 10);
 
     // Only create a new conversation for guests if they have credits AND no existing conversations
@@ -821,6 +973,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
+    // Populate voices when they are loaded or change
+    if (typeof speechSynthesis !== 'undefined') {
+        speechSynthesis.onvoiceschanged = populateVoiceListHome;
+        // Also call it once initially in case voices are already loaded
+        populateVoiceListHome();
+    }
+
     // Add event listener for face tracking toggle in modal
     const modalFaceTrackingToggle = document.getElementById('faceTrackingToggleModal');
     if (modalFaceTrackingToggle) {
@@ -829,11 +988,24 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('faceTrackingEnabled', isEnabled);
             console.log('Face tracking setting changed to:', isEnabled);
 
+            // Check user plan before enabling/disabling features
+            // currentUser and userPlan are already declared at a higher scope
+
+            if (userPlan !== 'pro') {
+                console.log('Face tracking requires Pro plan. Not enabling/disabling.');
+                alert('Face Expression Tracking is a Pro plan feature. Please upgrade to Pro to use this feature.');
+                // Revert toggle state if user is not Pro and tried to enable it
+                if (isEnabled) event.target.checked = false;
+                return;
+            }
+
             if (isEnabled) {
                 // If enabling, attempt to start video and load models
                 console.log('Attempting to start face tracking...');
                 const emotionDisplay = document.querySelector('.emotion-display');
+                const lightWarningText = document.querySelector('.light-warning-text'); // Get the warning text element
                 if (emotionDisplay) emotionDisplay.style.display = 'block';
+                if (lightWarningText) lightWarningText.style.display = 'block'; // Show warning text
                 if (typeof faceapi !== 'undefined') {
                      loadModelsAndStart();
                 } else {
@@ -848,13 +1020,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 // If disabling, stop the video stream
                 console.log('Attempting to stop face tracking...');
                 const videoElementForStop = document.getElementById('videoInput');
+                const emotionDisplay = document.querySelector('.emotion-display');
+                const lightWarningText = document.querySelector('.light-warning-text'); // Get the warning text element
+
                 if (videoElementForStop && videoElementForStop.srcObject) {
                     videoElementForStop.srcObject.getTracks().forEach(track => track.stop());
                     videoElementForStop.srcObject = null;
                     console.log('Face tracking video stream stopped.');
                 }
-                const emotionDisplay = document.querySelector('.emotion-display');
                 if (emotionDisplay) emotionDisplay.style.display = 'none';
+                if (lightWarningText) lightWarningText.style.display = 'none'; // Hide warning text
                 console.log('Face tracking stopped.');
             }
         });
@@ -878,10 +1053,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const isFaceTrackingEnabled = localStorage.getItem('faceTrackingEnabled') === 'true';
     const emotionEmoji = document.getElementById('emotionEmoji');
     const emotionDisplay = document.querySelector('.emotion-display');
+    const lightWarningText = document.querySelector('.light-warning-text'); // Get the warning text element
 
-    if (!isFaceTrackingEnabled) {
+    // Check user plan for initial face tracking state on page load
+    // currentUser and userPlan are already declared at a higher scope
+
+    if (userPlan !== 'pro') {
+        console.log('Face tracking is a Pro plan feature. Disabling on page load.');
+        if (emotionDisplay) emotionDisplay.style.display = 'none';
+        if (lightWarningText) lightWarningText.style.display = 'none';
+        const videoElementForStop = document.getElementById('videoInput');
+        if (videoElementForStop && videoElementForStop.srcObject) {
+            videoElementForStop.srcObject.getTracks().forEach(track => track.stop());
+            videoElementForStop.srcObject = null;
+            console.log('Face tracking disabled for non-Pro user: Video stream stopped.');
+        }
+    } else if (!isFaceTrackingEnabled) {
         if (emotionDisplay) {
             emotionDisplay.style.display = 'none';
+        }
+        if (lightWarningText) {
+            lightWarningText.style.display = 'none'; // Hide warning text if face tracking is disabled
         }
         const videoElementForStop = document.getElementById('videoInput');
         if (videoElementForStop && videoElementForStop.srcObject) {
@@ -894,22 +1086,29 @@ document.addEventListener('DOMContentLoaded', () => {
         if (emotionDisplay) {
             emotionDisplay.style.display = 'block';
         }
+        if (lightWarningText) {
+            lightWarningText.style.display = 'block'; // Show warning text if face tracking is enabled
+        }
         checkFaceApiReady();
     }
 });
 
 function getConversations() {
-    const data = localStorage.getItem('aiConversations');
-    console.log('Raw localStorage data:', data);
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userId = currentUser ? currentUser.email : 'guest';
+    const data = localStorage.getItem(`aiConversations_${userId}`);
+    console.log('Raw localStorage data for user', userId, ':', data);
     const parsed = data ? JSON.parse(data) : [];
-    console.log('Parsed conversations:', parsed);
+    console.log('Parsed conversations for user', userId, ':', parsed);
     return parsed;
 }
 
 function saveConversations(conversations) {
-    console.log('Saving conversations to localStorage:', conversations);
-    localStorage.setItem('aiConversations', JSON.stringify(conversations));
-    console.log('Verification - Reading back from localStorage:', localStorage.getItem('aiConversations'));
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userId = currentUser ? currentUser.email : 'guest';
+    console.log('Saving conversations to localStorage for user', userId, ':', conversations);
+    localStorage.setItem(`aiConversations_${userId}`, JSON.stringify(conversations));
+    console.log('Verification - Reading back from localStorage:', localStorage.getItem(`aiConversations_${userId}`));
 }
 
 function generateConversationTitle() {
@@ -918,21 +1117,24 @@ function generateConversationTitle() {
 }
 
 function startNewConversation() {
-    console.log('Starting new conversation'); // Debug log
-    const title = generateConversationTitle();
-    localStorage.setItem('currentConversationTitle', title);
+    console.log('=== startNewConversation called ===');
+    const convos = getConversations();
+    
+    // Generate a timestamped title for the new conversation
+    const now = new Date();
+    const title = `Conversation on ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
     
     const newConvo = {
-        title,
-        started: Date.now(),
-        messages: []
+        title: title,
+        messages: [],
+        startTime: now.getTime()
     };
     
-    const convos = getConversations();
     convos.push(newConvo);
     saveConversations(convos);
+    localStorage.setItem('currentConversationTitle', title);
     
-    console.log('New conversation created:', newConvo); // Debug log
+    console.log('New conversation created:', newConvo);
     return newConvo;
 }
 
@@ -1081,11 +1283,11 @@ function startFaceDetection() {
                     if (emotionChangeCount >= EMOTION_CHANGE_THRESHOLD) {
                         updateEmotionDisplay(dominantEmotion);
                     }
-    } else {
+                } else {
                     emotionChangeCount = 1;
                     lastEmotion = dominantEmotion;
                 }
-    } else {
+            } else {
                 // No face detected
                 if (emotionEmoji.alt !== 'neutral (no face)') {
                     updateEmotionDisplay('neutral');
@@ -1129,5 +1331,25 @@ function checkFaceApiReady(retries = 10, delay = 500) {
         }
         const emotionDisplay = document.querySelector('.emotion-display');
         if (emotionDisplay) emotionDisplay.style.display = 'none';
+    }
+}
+
+// Function to finalize and save the current conversation
+function finalizeCurrentConversation() {
+    console.log('=== finalizeCurrentConversation called ===');
+    const convos = getConversations();
+    const currentTitle = localStorage.getItem('currentConversationTitle');
+    
+    if (!currentTitle) {
+        console.log('No active conversation to finalize');
+        return;
+    }
+    
+    const currentConvo = convos.find(c => c.title === currentTitle);
+    if (currentConvo) {
+        currentConvo.endTime = Date.now();
+        saveConversations(convos);
+        localStorage.removeItem('currentConversationTitle');
+        console.log('Conversation finalized:', currentConvo);
     }
 }

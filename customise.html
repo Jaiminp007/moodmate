@@ -42,24 +42,9 @@
           <label for="triggerDetection"></label>
         </div>
       </div>
-    </div>
-
-    <div class="customise-section">
-      <h2>Mood Tracking Preferences</h2>
-      <div class="setting-item-custom">
-        <label for="moodLogging">Enable Mood Logging:</label>
-        <div class="toggle-switch" id="moodLoggingToggle">
-          <input type="checkbox" id="moodLogging">
-          <label for="moodLogging"></label>
-        </div>
-      </div>
-      <div class="setting-item-custom">
-        <label for="dataRetention">Data Retention:</label>
-        <select id="dataRetention" name="dataRetention">
-          <option value="7">7 Days</option>
-          <option value="30">30 Days</option>
-          <option value="session">Until Tab Close</option>
-        </select>
+      <div class="setting-item-custom" id="triggerWordInputContainer" style="display: none;">
+        <label for="triggerWord">Trigger Word:</label>
+        <input type="text" id="triggerWord" name="triggerWord" placeholder="e.g., stop, end conversation">
       </div>
     </div>
 
@@ -82,15 +67,57 @@
       </div>
     </div>
 
+    <div class="customise-section">
+      <h2>Choose Your AI Voice</h2>
+      <div class="setting-item-custom">
+        <label for="aiVoiceSelect">Select Voice:</label>
+        <select id="aiVoiceSelect" name="aiVoiceSelect">
+          <!-- Voices will be populated here by JavaScript -->
+        </select>
+        <button id="playVoiceSample" class="btn-primary" style="margin-left: 10px;">Play Sample</button>
+      </div>
+    </div>
+
+    <div class="customise-section">
+      <h2>Mood Tracking Preferences</h2>
+      <div class="setting-item-custom">
+        <label for="moodLogging">Enable Mood Logging:</label>
+        <div class="toggle-switch" id="moodLoggingToggle">
+          <input type="checkbox" id="moodLogging">
+          <label for="moodLogging"></label>
+        </div>
+      </div>
+      <div class="setting-item-custom">
+        <label for="dataRetention">Data Retention:</label>
+        <select id="dataRetention" name="dataRetention">
+          <option value="7">7 Days</option>
+          <option value="30">30 Days</option>
+          <option value="session">Until Tab Close</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="customise-section">
+      <h2>AI Journal Summaries</h2>
+      <div class="summary-controls">
+        <button id="generateSummaryBtn" class="btn-primary">Generate Journal Summary</button>
+        <button id="exportSummaryBtn" class="btn-primary" style="display:none;">Export Summary</button>
+      </div>
+      <div id="summaryLoading" class="loading-spinner" style="display:none;">Loading summary...</div>
+      <div id="journalSummaryText" class="journal-summary-content"></div>
+      <canvas id="journalMoodChart"></canvas>
+      <div id="journalActivities" class="journal-summary-content"></div>
+    </div>
+
   </main>
-  <!-- Settings Modal (copied from history.html) -->
+  <!-- Settings Modal -->
   <div id="settings-modal" class="settings-modal">
     <div class="settings-modal-content">
-      <span class="close-modal" id="close-settings">&times;</span>
+      <button class="close-modal" id="close-settings" aria-label="Close settings">&times;</button>
       <h2>Settings</h2>
       <div class="setting-item">
         <label for="darkModeToggleModal">Dark Mode</label>
-        <div class="toggle-switch modal-toggle" id="modal-theme-toggle-container">
+        <div class="toggle-switch modal-toggle">
           <input type="checkbox" id="darkModeToggleModal">
           <label for="darkModeToggleModal"></label>
         </div>
@@ -113,5 +140,7 @@
     </div>
   </div>
   <script src="customise.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.min.js"></script>
 </body>
 </html> 

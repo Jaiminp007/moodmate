@@ -49,7 +49,7 @@
         <!-- Plus Tier (Featured) -->
         <div class="pricing-card featured">
           <div class="plan-title">Plus</div>
-          <div class="plan-price">₹499/mo</div>
+          <div class="plan-price">$2/mo</div>
           <ul>
             <li>✅ 🎭 Facial Emotion Detection</li>
             <li>✅ 🎤 Voice-to-Voice Conversations</li>
@@ -60,12 +60,12 @@
             <li>❌ 📈 AI Journal Summaries</li>
             <li>❌ 🧪 Early Access to New Features</li>
           </ul>
-          <button class="plan-cta">Upgrade</button>
+          <button class="plan-cta upgrade-btn" onclick="upgradeToPlan('plus')">Upgrade</button>
         </div>
         <!-- Pro Tier -->
         <div class="pricing-card">
           <div class="plan-title">Pro</div>
-          <div class="plan-price">₹999/mo</div>
+          <div class="plan-price">$3/mo</div>
           <ul>
             <li>✅ 🎭 Facial Emotion Detection</li>
             <li>✅ 🎤 Voice-to-Voice Conversations</li>
@@ -113,5 +113,20 @@
   </div>
   <script src="about.js"></script>
   <script src="pricing.js"></script>
+  <script>
+  function upgradeToPlan(plan) {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) {
+      alert('Please log in to upgrade your plan');
+      window.location.href = 'login.html';
+      return;
+    }
+    
+    currentUser.plan = plan;
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    alert(`Successfully upgraded to ${plan.toUpperCase()} plan!`);
+    window.location.href = 'home.html';
+  }
+  </script>
 </body>
 </html> 

@@ -1,3 +1,36 @@
+// Initialize Chart.js
+document.addEventListener('DOMContentLoaded', () => {
+    // Register required Chart.js components
+    if (typeof Chart !== 'undefined') {
+        const {
+            LinearScale,
+            CategoryScale,
+            TimeScale,
+            Tooltip,
+            Title,
+            Legend,
+            LineController,
+            PointElement,
+            LineElement
+        } = Chart;
+
+        Chart.register(
+            LinearScale,
+            CategoryScale,
+            TimeScale,
+            Tooltip,
+            Title,
+            Legend,
+            LineController,
+            PointElement,
+            LineElement
+        );
+        console.log('Chart.js components registered successfully');
+    } else {
+        console.warn('Chart.js not available. Please check if the library is loaded.');
+    }
+});
+
 // Get DOM elements
 const settingsModal = document.getElementById('settings-modal');
 const settingsBtn = document.getElementById('settings-btn');
@@ -51,8 +84,17 @@ window.onclick = function(event) {
 
 // Conversation Modal Logic
 function getConversations() {
-    const data = localStorage.getItem('aiConversations');
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userId = currentUser ? currentUser.email : 'guest';
+    const data = localStorage.getItem(`aiConversations_${userId}`);
     return data ? JSON.parse(data) : [];
+}
+
+function saveConversations(conversations) {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userId = currentUser ? currentUser.email : 'guest';
+    console.log('Saving conversations to localStorage from history.js for user', userId, ':', conversations);
+    localStorage.setItem(`aiConversations_${userId}`, JSON.stringify(conversations));
 }
 
 // Function to get the latest mood boost activities
@@ -146,38 +188,197 @@ function getMoodEmoji(mood) {
 
 // Function to display past conversations
 function displayPastConversations() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userPlan = currentUser ? currentUser.plan : 'free';
     const convos = getConversations();
     
     // Clear existing conversations
     conversationList.innerHTML = '';
     
+    if (userPlan === 'free') {
+        // Create locked state for free users
+        const bottomBox = document.querySelector('.bottom-box');
+        bottomBox.innerHTML = `
+            <img src="assets/lock.png" alt="Lock Icon" class="lock-image">
+            <p class="lock-message">Upgrade to Plus or Pro plan to view your conversation history</p>
+        `;
+        return;
+    }
+    
+    // For Plus/Pro users, show the conversations
     if (convos.length === 0) {
         conversationList.innerHTML = '<p>No past conversations available.</p>';
         return;
     }
 
-    // Display last 5 conversations
-    convos.slice(-5).reverse().forEach(convo => {
-        const lastMessage = convo.messages[convo.messages.length - 1];
-        if (lastMessage && lastMessage.role === 'assistant') {
-            const conversationItem = document.createElement('div');
-            conversationItem.className = 'conversation-item';
-            
-            const timestamp = document.createElement('p');
-            timestamp.textContent = `Timestamp: ${formatTimestamp(convo.messages[0].timestamp)}`;
-            
-            const mood = document.createElement('p');
-            mood.textContent = `Mood: ${getMoodEmoji(lastMessage.feeling || 'neutral')}`;
-            
-            conversationItem.appendChild(timestamp);
-            conversationItem.appendChild(mood);
-            conversationList.appendChild(conversationItem);
+    // Display conversations in reverse chronological order
+    convos.slice().reverse().forEach(convo => {
+        const conversationItem = document.createElement('div');
+        conversationItem.className = 'conversation-item';
+        conversationItem.dataset.title = convo.title;
+        conversationItem.dataset.id = convo.startTime;
+        
+        const titleContainer = document.createElement('div');
+        titleContainer.className = 'conversation-title-container';
+
+        const title = document.createElement('h3');
+        title.textContent = convo.title;
+        
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'conversation-actions';
+
+        const editButton = document.createElement('button');
+        editButton.className = 'conversation-action-btn edit-btn';
+        editButton.setAttribute('aria-label', 'Edit conversation title');
+        editButton.innerHTML = '<img src="assets/edit.png" alt="Edit Icon">';
+        editButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent opening conversation details
+            handleEditConversation(convo.startTime, convo.title, null);
+        });
+
+        const exportButton = document.createElement('button');
+        exportButton.className = 'conversation-action-btn export-btn';
+        exportButton.setAttribute('aria-label', 'Export conversation as JSON');
+        exportButton.innerHTML = '<img src="assets/external-link.png" alt="Export Icon">';
+        exportButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent opening conversation details
+            handleExportConversation(convo);
+        });
+
+        actionsContainer.appendChild(editButton);
+        actionsContainer.appendChild(exportButton);
+
+        titleContainer.appendChild(title);
+        titleContainer.appendChild(actionsContainer);
+
+        conversationItem.appendChild(titleContainer);
+
+        const duration = document.createElement('p');
+        if (convo.endTime) {
+            const durationMs = convo.endTime - convo.startTime;
+            const minutes = Math.floor(durationMs / 60000);
+            const seconds = Math.floor((durationMs % 60000) / 1000);
+            duration.textContent = `Duration: ${minutes}m ${seconds}s`;
+        } else {
+            duration.textContent = 'Incomplete conversation';
+        }
+        
+        const messageCount = document.createElement('p');
+        messageCount.textContent = `${convo.messages.length} messages`;
+        
+        conversationItem.appendChild(duration);
+        conversationItem.appendChild(messageCount);
+        
+        // Add click handler to show conversation details
+        conversationItem.addEventListener('click', () => showConversationDetails(convo));
+        
+        conversationList.appendChild(conversationItem);
+    });
+}
+
+// Function to show conversation details
+function showConversationDetails(convo) {
+    const modal = document.createElement('div');
+    modal.className = 'conversations-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'modal-title');
+    
+    modal.innerHTML = `
+        <div class="conversations-modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">${convo.title}</h2>
+                <button class="close-modal" aria-label="Close conversation">&times;</button>
+            </div>
+            <div class="conversation-messages"></div>
+        </div>
+    `;
+
+    const messagesContainer = modal.querySelector('.conversation-messages');
+    convo.messages.forEach(msg => {
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${msg.role}`;
+        
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        content.textContent = msg.content;
+        messageElement.appendChild(content);
+        
+        const timestamp = document.createElement('div');
+        timestamp.className = 'message-timestamp';
+        timestamp.textContent = new Date(msg.timestamp).toLocaleTimeString();
+        messageElement.appendChild(timestamp);
+        
+        if (msg.role === 'assistant' && msg.feeling) {
+            const feeling = document.createElement('div');
+            feeling.className = 'message-feeling';
+            feeling.textContent = `Mood: ${getMoodEmoji(msg.feeling)}`;
+            messageElement.appendChild(feeling);
+        }
+        
+        messagesContainer.appendChild(messageElement);
+    });
+
+    document.body.appendChild(modal);
+
+    // Handle modal close
+    const closeBtn = modal.querySelector('.close-modal');
+    closeBtn.onclick = () => {
+        document.body.removeChild(modal);
+    };
+
+    // Close on outside click
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    };
+
+    // Close on escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(modal);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    // Focus trap
+    const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const firstFocusableElement = focusableElements[0];
+    const lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+    modal.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+            if (e.shiftKey) {
+                if (document.activeElement === firstFocusableElement) {
+                    lastFocusableElement.focus();
+                    e.preventDefault();
+                }
+            } else {
+                if (document.activeElement === lastFocusableElement) {
+                    firstFocusableElement.focus();
+                    e.preventDefault();
+                }
+            }
         }
     });
+
+    // Focus the close button when modal opens
+    closeBtn.focus();
 }
 
 // Function to handle view all conversations
 function handleViewAllConversations() {
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userPlan = currentUser ? currentUser.plan : 'free';
+    
+    // Disable View All Conversations for free plan users
+    if (userPlan === 'free') {
+        alert('View All Conversations is available with Plus or Pro plans. Please upgrade to access this feature.');
+        return;
+    }
+
     const convos = getConversations();
     if (convos.length === 0) {
         alert('No conversations available.');
@@ -187,11 +388,17 @@ function handleViewAllConversations() {
     // Create modal for all conversations
     const modal = document.createElement('div');
     modal.className = 'conversations-modal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-labelledby', 'all-conversations-title');
+    
     modal.innerHTML = `
         <div class="conversations-modal-content">
-            <h2>All Conversations</h2>
+            <div class="modal-header">
+                <h2 id="all-conversations-title">Past AI Conversations</h2>
+                <button class="close-modal" aria-label="Close conversations list">&times;</button>
+            </div>
             <div class="all-conversations-list"></div>
-            <button class="close-modal">Close</button>
         </div>
     `;
 
@@ -199,22 +406,74 @@ function handleViewAllConversations() {
     convos.reverse().forEach(convo => {
         const convoElement = document.createElement('div');
         convoElement.className = 'conversation-detail';
+        convoElement.setAttribute('role', 'button');
+        convoElement.setAttribute('tabindex', '0');
+        convoElement.dataset.id = convo.startTime; // Unique ID for editing
         
+        // Title and actions container
+        const titleAndActions = document.createElement('div');
+        titleAndActions.className = 'conversation-title-container';
+
         const title = document.createElement('h3');
-        title.textContent = `Conversation from ${formatTimestamp(convo.messages[0].timestamp)}`;
+        // Use a span for the text content within h3 so icons can be easily aligned
+        const titleTextSpan = document.createElement('span');
+        titleTextSpan.textContent = convo.title; // Use the actual conversation title
+        title.appendChild(titleTextSpan);
         
-        const messages = document.createElement('div');
-        messages.className = 'conversation-messages';
-        
-        convo.messages.forEach(msg => {
-            const messageElement = document.createElement('div');
-            messageElement.className = `message ${msg.role}`;
-            messageElement.textContent = msg.content;
-            messages.appendChild(messageElement);
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'conversation-actions';
+
+        const editButton = document.createElement('button');
+        editButton.className = 'conversation-action-btn edit-btn';
+        editButton.setAttribute('aria-label', 'Edit conversation title');
+        editButton.innerHTML = '<img src="assets/edit.png" alt="Edit Icon">';
+        editButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent opening conversation details
+            handleEditConversation(convo.startTime, convo.title, modal); // Pass modal reference
         });
 
-        convoElement.appendChild(title);
-        convoElement.appendChild(messages);
+        const exportButton = document.createElement('button');
+        exportButton.className = 'conversation-action-btn export-btn';
+        exportButton.setAttribute('aria-label', 'Export conversation as JSON');
+        exportButton.innerHTML = '<img src="assets/external-link.png" alt="Export Icon">';
+        exportButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent opening conversation details
+            handleExportConversation(convo);
+        });
+
+        actionsContainer.appendChild(editButton);
+        actionsContainer.appendChild(exportButton);
+
+        titleAndActions.appendChild(title);
+        titleAndActions.appendChild(actionsContainer);
+
+        convoElement.appendChild(titleAndActions);
+        
+        const startInfo = document.createElement('p');
+        startInfo.textContent = `Started: ${formatTimestamp(convo.startTime)}`;
+        
+        const messageCount = document.createElement('p');
+        messageCount.textContent = `${convo.messages.length} messages`;
+        messageCount.className = 'message-count';
+
+        convoElement.appendChild(startInfo);
+        convoElement.appendChild(messageCount);
+        
+        // Add click handler to show conversation details
+        convoElement.addEventListener('click', () => {
+            document.body.removeChild(modal); // Close the current modal
+            showConversationDetails(convo); // Open details modal
+        });
+        
+        // Add keyboard support
+        convoElement.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                document.body.removeChild(modal); // Close the current modal
+                showConversationDetails(convo);
+            }
+        });
+
         conversationsList.appendChild(convoElement);
     });
 
@@ -226,19 +485,130 @@ function handleViewAllConversations() {
         document.body.removeChild(modal);
     };
 
+    // Close on outside click
     modal.onclick = (e) => {
         if (e.target === modal) {
             document.body.removeChild(modal);
         }
     };
+
+    // Close on escape key
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            document.body.removeChild(modal);
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    // Focus trap
+    const focusableElements = modal.querySelectorAll('button, [tabindex]:not([tabindex="-1"])');
+    const firstFocusableElement = focusableElements[0];
+    const lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+    modal.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+            if (e.shiftKey) {
+                if (document.activeElement === firstFocusableElement) {
+                    lastFocusableElement.focus();
+                    e.preventDefault();
+                }
+            } else {
+                if (document.activeElement === lastFocusableElement) {
+                    firstFocusableElement.focus();
+                    e.preventDefault();
+                }
+            }
+        }
+    });
+
+    // Focus the close button when modal opens
+    closeBtn.focus();
 }
 
 // Function to delete all conversations
 function deleteAllConversations() {
     if (confirm('Are you sure you want to delete all conversations? This action cannot be undone.')) {
-        localStorage.removeItem('aiConversations');
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        const userId = currentUser ? currentUser.email : 'guest';
+        localStorage.removeItem(`aiConversations_${userId}`);
         displayMoodBoostActivities();
         displayPastConversations();
+    }
+}
+
+// Function to handle editing a conversation title
+function handleEditConversation(convoStartTime, currentTitle, modalToReopen = null) {
+    console.log('handleEditConversation: Initiated for ID:', convoStartTime, 'Current Title:', currentTitle);
+    const newTitle = prompt('Enter a new title for this conversation:', currentTitle);
+
+    if (newTitle !== null && newTitle.trim() !== '' && newTitle !== currentTitle) {
+        let convos = getConversations();
+        const convoIndex = convos.findIndex(c => c.startTime === convoStartTime);
+        console.log('handleEditConversation: Found convoIndex:', convoIndex, 'New Title proposed:', newTitle);
+
+        if (convoIndex !== -1) {
+            // Update the title in the conversation object
+            convos[convoIndex].title = newTitle.trim();
+            console.log('handleEditConversation: Conversations array BEFORE saving:', JSON.parse(JSON.stringify(convos)));
+            saveConversations(convos); // Save updated conversations to localStorage
+            console.log('handleEditConversation: Conversations array AFTER saving (from localStorage):', localStorage.getItem('aiConversations'));
+
+            // Update currentConversationTitle in localStorage if this was the active convo
+            const currentActiveConvoTitle = localStorage.getItem('currentConversationTitle');
+            if (currentActiveConvoTitle === currentTitle) {
+                localStorage.setItem('currentConversationTitle', newTitle.trim());
+                console.log('handleEditConversation: Updated current active conversation title in localStorage.');
+            }
+
+            displayPastConversations(); // Re-render the main page list
+            
+            // Re-render the modal if it was open
+            if (modalToReopen) {
+                console.log('handleEditConversation: Modal was open, re-rendering.');
+                document.body.removeChild(modalToReopen); // Remove the old modal
+                handleViewAllConversations(); // Re-create and show the updated modal
+            }
+            console.log(`handleEditConversation: Conversation with ID ${convoStartTime} updated to: "${newTitle}"`);
+        } else {
+            console.warn(`handleEditConversation: Conversation with ID ${convoStartTime} not found for editing.`);
+            alert('Error: Conversation not found.');
+        }
+    } else if (newTitle !== null && newTitle.trim() === '') {
+        alert('Conversation title cannot be empty.');
+        console.log('handleEditConversation: New title was empty.');
+    } else {
+        console.log('handleEditConversation: Edit cancelled or no change made.');
+    }
+}
+
+// Function to handle exporting a conversation as JSON
+function handleExportConversation(convo) {
+    try {
+        const jsonContent = JSON.stringify(convo, null, 2); // Pretty-print JSON
+        const blob = new Blob([jsonContent], { type: 'application/json' });
+        
+        // Format filename: conversation_YYYY-MM-DD_HHMMSS.json
+        const date = new Date(convo.startTime);
+        const filename = `conversation_${date.getFullYear()}-
+${String(date.getMonth() + 1).padStart(2, '0')}-
+${String(date.getDate()).padStart(2, '0')}_
+${String(date.getHours()).padStart(2, '0')}
+${String(date.getMinutes()).padStart(2, '0')}
+${String(date.getSeconds()).padStart(2, '0')}.json`;
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a); // Required for Firefox
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log(`Conversation "${convo.title}" exported successfully.`);
+    } catch (error) {
+        console.error('Error exporting conversation:', error);
+        alert('Failed to export conversation. Please try again.');
     }
 }
 
@@ -278,55 +648,7 @@ document.addEventListener('DOMContentLoaded', () => {
     closeSettingsBtn.addEventListener('click', closeSettingsModal);
     darkModeToggle.addEventListener('change', toggleTheme);
 
-    // Conversation modal logic
-    const convoModal = document.getElementById('convo-modal');
-    const closeConvoModal = document.getElementById('close-convo-modal');
-    const convoModalContent = document.getElementById('convo-modal-content');
-
-    console.log('Modal elements found:', { viewConvosBtn, convoModal, closeConvoModal, convoModalContent }); // Log elements
-
-    if (viewConvosBtn && convoModal && closeConvoModal && convoModalContent) {
-        viewConvosBtn.addEventListener('click', () => {
-            console.log('View All Conversations button clicked.'); // Log button click
-            // Load conversations from localStorage
-            const convos = getConversations();
-            console.log('Conversations loaded from localStorage:', convos); // Log loaded data
-            console.log('Number of conversations:', convos.length); // Log number of conversations
-
-            if (convos.length === 0) {
-                convoModalContent.innerHTML = '<p>No conversations found.</p>';
-            } else {
-                // Display a list of conversation titles instead of full content
-                convoModalContent.innerHTML = '<h3>Select a conversation:</h3>' +
-                                              convos.map(convo => `
-                    <div class="convo-block" style="margin-bottom: 12px; padding: 10px; border: 1px solid #eee; cursor: pointer;" data-convo-title="${convo.title}">
-                        <h4>${convo.title}</h4>
-                        <p style="font-size: 0.9em; color: #555;">Started: ${new Date(convo.started).toLocaleString()}</p>
-                    </div>
-                `).join('');
-
-                // Optional: Add event listeners to these conversation items to view full convo
-                // For now, they just list the titles.
-            }
-            convoModal.style.display = 'flex';
-        });
-        closeConvoModal.addEventListener('click', () => {
-            convoModal.style.display = 'none';
-        });
-        // Also close modal when clicking outside content
-        convoModal.addEventListener('click', (e) => {
-            if (e.target === convoModal) {
-                convoModal.style.display = 'none';
-            }
-        });
-    }
-
-    // Initial display of activities and conversations
-    console.log('Initializing history page display');
-    displayMoodBoostActivities();
-    displayPastConversations();
-    renderEmotionChart(); // Call the new chart rendering function
-    
+    // Remove old modal logic
     if (viewConvosBtn) {
         viewConvosBtn.addEventListener('click', handleViewAllConversations);
     }
@@ -334,13 +656,39 @@ document.addEventListener('DOMContentLoaded', () => {
     if (deleteAllConvosBtn) {
         deleteAllConvosBtn.addEventListener('click', deleteAllConversations);
     }
+
+    // Initial display of activities and conversations
+    console.log('Initializing history page display');
+    displayMoodBoostActivities();
+    displayPastConversations();
+    renderEmotionChart();
 });
 
-// New function for Emotion Chart
+// Emotion Chart
+let emotionChartInstance = null;
+
 function renderEmotionChart() {
-    const ctx = document.getElementById('emotion-chart').getContext('2d');
+    // Retrieve current user and plan
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    const userPlan = currentUser ? currentUser.plan : 'free';
+    const emotionChartContainer = document.getElementById('emotionChartContainer');
+
+    if (userPlan === 'free') {
+        console.log('Emotion Line Chart: Free plan detected, hiding chart.');
+        if (emotionChartContainer) {
+            emotionChartContainer.style.display = 'none';
+        }
+        return; // Do not render chart for free users
+    } else {
+        if (emotionChartContainer) {
+            emotionChartContainer.style.display = 'block'; // Ensure visible for Plus/Pro
+        }
+    }
+
     const conversations = getConversations();
-    
+    const emotionsData = [];
+    console.log('Rendering Emotion Chart. Conversations available:', conversations.length);
+
     const labels = [];
     const dataPoints = [];
     const emotionMap = {
@@ -380,7 +728,7 @@ function renderEmotionChart() {
                     dateObject = new Date(msg.timestamp);
                 } else if (msg.timestamp instanceof Date) {
                     dateObject = msg.timestamp;
-                } else {
+            } else {
                     console.warn(`Invalid timestamp format: ${msg.timestamp}. Skipping this data point.`);
                     return;
                 }
@@ -527,6 +875,6 @@ function renderEmotionChart() {
                     }
                 }
             }
-        }
-    });
-} 
+            }
+        });
+    }

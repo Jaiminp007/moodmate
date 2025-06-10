@@ -539,7 +539,7 @@ body.light-mode .customise-section:hover .setting-item-custom label {
 
 /* Ensure h2 also changes color correctly on hover, if needed, or remains as inherited */
 body.light-mode .customise-section:hover h2 {
-    color: var(--customise-section-text-light-hover); /* This should be navy as per :root */
+    color: var(--yellow);
 }
 
 @media (max-width: 700px) {
@@ -588,4 +588,124 @@ body.light-mode .customise-section:hover h2 {
     font-size: 0.9rem;
     margin-right: 10px;
   }
+}
+
+.summary-controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.journal-summary-content {
+    background-color: var(--customise-section-bg-dark-default); /* Use the default background for text areas */
+    color: var(--customise-section-text-dark-default);
+    padding: 15px;
+    border-radius: var(--customise-section-radius);
+    margin-bottom: 20px;
+    text-align: left;
+    line-height: 1.6;
+    white-space: pre-wrap; /* Preserve whitespace and line breaks */
+    word-break: break-word;
+    box-shadow: var(--customise-section-shadow);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.journal-summary-content:empty {
+    display: none; /* Hide if no content */
+}
+
+.journal-summary-content h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: inherit; /* Inherit from parent, will be navy in dark, white in light */
+}
+
+#journalMoodChart {
+    max-height: 400px; /* Limit height of chart */
+    margin-bottom: 20px;
+    background-color: var(--customise-section-bg-dark-default);
+    border-radius: var(--customise-section-radius);
+    padding: 15px;
+    box-shadow: var(--customise-section-shadow);
+}
+
+.loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+    margin-top: 20px;
+    color: var(--text-color);
+}
+
+.loading-spinner::after {
+    content: "";
+    width: 40px;
+    height: 40px;
+    border: 5px solid rgba(255, 255, 255, 0.3); /* Light border for dark mode */
+    border-top-color: var(--yellow);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+body.light-mode .loading-spinner::after {
+    border: 5px solid rgba(0, 0, 0, 0.1); /* Darker border for light mode */
+    border-top-color: var(--yellow);
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* AI Journal Summary Buttons */
+#generateSummaryBtn,
+#exportSummaryBtn {
+    background-color: var(--navy);
+    color: var(--white);
+    border: 2px solid var(--navy);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    margin: 10px auto;
+    display: block;
+    max-width: 250px;
+}
+
+#generateSummaryBtn:hover,
+#exportSummaryBtn:hover {
+    background-color: var(--white);
+    color: var(--navy);
+    border-color: var(--navy);
+}
+
+/* Light mode specific styles for buttons */
+body.light-mode #generateSummaryBtn,
+body.light-mode #exportSummaryBtn {
+    background-color: var(--navy);
+    color: var(--white);
+    border-color: var(--navy);
+}
+
+body.light-mode #generateSummaryBtn:hover,
+body.light-mode #exportSummaryBtn:hover {
+    background-color: var(--white);
+    color: var(--navy);
+    border-color: var(--navy);
+}
+
+/* Light mode overrides for journal summary content */
+body.light-mode .journal-summary-content {
+    background-color: var(--customise-section-bg-light-default);
+    color: var(--customise-section-text-light-default);
+}
+
+body.light-mode #journalMoodChart {
+    background-color: var(--customise-section-bg-light-default);
 } 

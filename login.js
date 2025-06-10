@@ -42,7 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ...user,
                 isLoggedIn: true,
                 // Initialize conversationCredits if it's undefined or null
-                conversationCredits: user.conversationCredits === undefined || user.conversationCredits === null ? 10 : user.conversationCredits
+                conversationCredits: user.conversationCredits === undefined || user.conversationCredits === null ? 10 : user.conversationCredits,
+                plan: user.plan || 'free' // Load existing plan or default to 'free'
             };
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             console.log('Login successful:', currentUser);
@@ -92,7 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
             password,
             isLoggedIn: true,
             createdAt: new Date().toISOString(),
-            conversationCredits: 10 // Assign 10 free credits to new users
+            conversationCredits: 10, // Assign 10 free credits to new users
+            plan: 'free' // Assign 'free' plan to new users
         };
 
         // Add to users array and save
