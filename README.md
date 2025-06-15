@@ -1,88 +1,68 @@
-# Therapist Practice Management System
+# MoodMate - Your Personalised Therapist
 
-A modern web application built with React and TypeScript to help therapists manage their practice efficiently. This application provides features for managing clients, appointments, and practice information.
+A comprehensive web application designed to help users track and manage their emotional well-being. This application provides features for mood tracking, personalization, and emotional support with a modern, user-friendly interface.
+
+![MoodMate Homepage](assets/1.png)
+
+## Live Demo
+
+Visit our live application at: [MoodMate](https://moodmate-1-y9lx.onrender.com/)
+
+![MoodMate Features](assets/2.png)
 
 ## Features
 
-- **Client Management**
-  - View and manage client information
-  - Track client progress and notes
-  - Maintain client contact details
+- **Mood Tracking**
+  - Track daily emotions and moods
+  - Visual mood history
+  - Personalized insights
 
-- **Appointment Scheduling**
-  - Calendar-based appointment management
-  - Session tracking
-  - Appointment reminders
+- **Customization**
+  - Personalize your experience
+  - Custom themes and settings
+  - User preferences management
 
-- **Practice Management**
-  - Practice information management
-  - Professional profile settings
-  - Business hours configuration
+- **User Management**
+  - Secure authentication
+  - Profile customization
+  - Privacy settings
 
 ## Tech Stack
 
 - **Frontend**
-  - React 18
-  - TypeScript
-  - React Router for navigation
-  - Modern UI components
+  - HTML5, CSS3, and JavaScript
+  - Custom CSS for styling
+  - Responsive design for all devices
 
-- **Development Tools**
-  - Vite for build and development
-  - ESLint for code quality
-  - TypeScript for type safety
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js (v14 or higher)
-- npm or yarn package manager
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/therapist.git
-   cd therapist
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-3. Start the development server:
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-4. Open your browser and navigate to `http://localhost:5173`
+- **Backend**
+  - Python (Flask) and Node.js
+  - RESTful API architecture
+  - Secure authentication system
 
 ## Project Structure
 
 ```
 therapist/
-├── src/
-│   ├── components/     # Reusable UI components
-│   ├── pages/         # Page components
-│   ├── types/         # TypeScript type definitions
-│   ├── utils/         # Utility functions
-│   └── App.tsx        # Main application component
-├── public/            # Static assets
-└── package.json       # Project dependencies and scripts
+├── assets/            # Static assets and images
+├── backend/          # Server-side code
+│   ├── app.py       # Python Flask application
+│   ├── server.js    # Node.js server
+│   └── requirements.txt  # Python dependencies
+├── *.html           # HTML pages
+├── *.css            # Stylesheet files
+├── *.js             # JavaScript files
+└── README.md        # Project documentation
 ```
 
-## Available Scripts
+## Available Pages
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run lint` - Run ESLint
-- `npm run preview` - Preview production build
+- Home (`index.html`)
+- Login (`login.html`)
+- About (`about.html`)
+- Pricing (`pricing.html`)
+- Customization (`customise.html`)
+- History (`history.html`)
+- Privacy Policy (`privacy.html`)
 
 ## Contributing
 
@@ -102,6 +82,7 @@ For support, please open an issue in the GitHub repository or contact the mainta
 
 ## Acknowledgments
 
-- React team for the amazing framework
-- TypeScript team for the type system
 - All contributors who have helped shape this project
+- The open-source community for their invaluable tools and resources
+
+> **Note**: This app is not an official therapist, but a supportive companion meant to offer comfort—not professional mental health advice.
