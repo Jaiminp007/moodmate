@@ -8,7 +8,6 @@ A comprehensive web application designed to help users track and manage their em
 
 Visit our live application at: [MoodMate](https://moodmate-1-y9lx.onrender.com/)
 
-![MoodMate Features](assets/2.png)
 
 ## Features
 
@@ -26,6 +25,9 @@ Visit our live application at: [MoodMate](https://moodmate-1-y9lx.onrender.com/)
   - Secure authentication
   - Profile customization
   - Privacy settings
+
+![MoodMate Features](assets/2.png)
+
 
 ## Tech Stack
 
