@@ -28,6 +28,20 @@ client = OpenAI(
     http_client=httpx.Client(trust_env=False) # Explicitly disable loading proxy settings from env vars
 )
 
+# ===================================================================
+# == Health Check Endpoint ==
+# This new endpoint is for the pinging service. It's lightweight
+# and does NOT call the OpenAI API, so it uses no credits.
+# ===================================================================
+@app.route('/health', methods=['GET'])
+def health_check():
+    """A simple endpoint to check if the app is running."""
+    return jsonify({'status': 'ok'}), 200
+
+# ===================================================================
+# == Original Chat API Endpoint ==
+# This is your main API logic that interacts with OpenAI.
+# ===================================================================
 @app.route('/api/chat', methods=['POST'])
 def chat():
     if not request.is_json:
@@ -114,4 +128,4 @@ def chat():
 if __name__ == '__main__':
     # In production, use a production-ready WSGI server like Gunicorn or uWSGI
     # For local development:
-    app.run(debug=True) 
+    app.run(debug=True)

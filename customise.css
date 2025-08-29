@@ -486,6 +486,12 @@ body.light-mode .setting-item-custom input[type="text"] {
   background: var(--toggle-general-on-bg);
 }
 
+/* --- NEW RULE: Style for disabled toggles --- */
+.customise-section .toggle-switch input[type="checkbox"]:disabled + label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .customise-section .toggle-switch label::after {
   content: '';
   position: absolute;
@@ -708,4 +714,4 @@ body.light-mode .journal-summary-content {
 
 body.light-mode #journalMoodChart {
     background-color: var(--customise-section-bg-light-default);
-} 
+}

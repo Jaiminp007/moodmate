@@ -12,6 +12,7 @@ const triggerWordInput = document.getElementById('triggerWord');
 const moodLoggingToggle = document.getElementById('moodLogging');
 const dataRetentionSelect = document.getElementById('dataRetention');
 const preferredNameInput = document.getElementById('preferredName');
+// --- FIX 1: Correctly target the checkbox INPUT, not the parent DIV ---
 const faceTrackingToggle = document.getElementById('faceTracking');
 
 // Get DOM elements for AI voice selection
@@ -27,6 +28,9 @@ const journalSummaryText = document.getElementById('journalSummaryText');
 const journalMoodChartCanvas = document.getElementById('journalMoodChart');
 const journalActivities = document.getElementById('journalActivities');
 const exportSummaryBtn = document.getElementById('exportSummaryBtn');
+
+// --- FIX 2: Define voices array in a higher scope to be accessible by the play sample button ---
+let voices = [];
 
 // Function to set the theme and update toggles
 function setTheme(isLightMode) {
@@ -87,7 +91,8 @@ function populateVoiceList() {
         return;
     }
 
-    const voices = speechSynthesis.getVoices();
+    // --- FIX 2: Assign to the higher-scoped variable ---
+    voices = speechSynthesis.getVoices();
     
     if (!voiceSelect) {
         console.warn('Voice select element not found');
@@ -139,17 +144,19 @@ function loadPreferences() {
   // Response Preferences
   if (responseLengthSelect) responseLengthSelect.value = localStorage.getItem('responseLength') || 'short';
   if (triggerDetectionToggle) {
-      // Trigger Word Detection: Pro plan only
+      const toggleContainer = document.getElementById('triggerDetectionToggle');
       if (userPlan === 'pro') {
           triggerDetectionToggle.checked = localStorage.getItem('triggerDetection') === 'true';
           triggerDetectionToggle.disabled = false;
-          triggerWordInputContainer.style.display = triggerDetectionToggle.checked ? 'block' : 'none';
+          // --- UX IMPROVEMENT: Add tooltip for enabled toggle ---
+          if(toggleContainer) toggleContainer.title = 'Enable or disable trigger word detection.';
       } else {
           triggerDetectionToggle.checked = false;
-          triggerDetectionToggle.disabled = true; // Disable toggle
-          triggerWordInputContainer.style.display = 'none'; // Hide input
+          triggerDetectionToggle.disabled = true;
+          // --- UX IMPROVEMENT: Add tooltip explaining why it's disabled ---
+          if(toggleContainer) toggleContainer.title = 'This is a Pro feature. Upgrade your plan to use it.';
       }
-      updateTriggerWordVisibility(); // Call to set initial visibility based on new logic
+      updateTriggerWordVisibility(); // Call to set initial visibility
   }
   if (triggerWordInput) {
       triggerWordInput.value = localStorage.getItem('triggerWord') || '';
@@ -161,14 +168,18 @@ function loadPreferences() {
   if (dataRetentionSelect) dataRetentionSelect.value = localStorage.getItem('dataRetention') || '7';
 
   // Tracking Preferences
-  if (faceTrackingToggle) {
-      // Face Expression Tracking: Pro plan only
+  if (faceTrackingToggle) { // This variable is now the correct checkbox input
+      const toggleContainer = document.getElementById('faceTrackingToggle');
       if (userPlan === 'pro') {
           faceTrackingToggle.checked = localStorage.getItem('faceTrackingEnabled') === 'true';
           faceTrackingToggle.disabled = false;
+          // --- UX IMPROVEMENT: Add tooltip for enabled toggle ---
+          if(toggleContainer) toggleContainer.title = 'Enable or disable face expression tracking.';
       } else {
           faceTrackingToggle.checked = false;
-          faceTrackingToggle.disabled = true; // Disable toggle
+          faceTrackingToggle.disabled = true;
+          // --- UX IMPROVEMENT: Add tooltip explaining why it's disabled ---
+          if(toggleContainer) toggleContainer.title = 'This is a Pro feature. Upgrade your plan to use it.';
       }
   }
 
@@ -179,9 +190,9 @@ function loadPreferences() {
   if (aiVoiceSelectionSection) {
       if (userPlan === 'plus' || userPlan === 'pro') {
           aiVoiceSelectionSection.style.display = 'block'; // Show section
+          populateVoiceList(); // Populate voices first
           if (aiVoiceSelect) {
               aiVoiceSelect.disabled = false;
-              populateVoiceList(); // Populate voices first
               const savedVoiceURI = localStorage.getItem('selectedAiVoice');
               if (savedVoiceURI) {
                   aiVoiceSelect.value = savedVoiceURI;
@@ -233,57 +244,97 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Event listeners for new customise preferences ---
   if (responseLengthSelect) responseLengthSelect.addEventListener('change', (e) => savePreference('responseLength', e.target.value));
-  if (triggerDetectionToggle && !triggerDetectionToggle.disabled) {
+  
+  // The logic `!triggerDetectionToggle.disabled` correctly prevents adding the listener if the feature is disabled
+  if (triggerDetectionToggle) {
       triggerDetectionToggle.addEventListener('change', (e) => {
-          savePreference('triggerDetection', e.target.checked);
-          updateTriggerWordVisibility();
+          if(!triggerDetectionToggle.disabled) {
+            savePreference('triggerDetection', e.target.checked);
+            updateTriggerWordVisibility();
+          }
       });
   }
-  if (triggerWordInput && !triggerWordInput.disabled) {
+  if (triggerWordInput) {
       triggerWordInput.addEventListener('input', (e) => {
-          savePreference('triggerWord', e.target.value);
+          if(!triggerWordInput.disabled) {
+            savePreference('triggerWord', e.target.value);
+          }
       });
   }
+
   if (moodLoggingToggle) moodLoggingToggle.addEventListener('change', (e) => savePreference('moodLogging', e.target.checked));
   if (dataRetentionSelect) dataRetentionSelect.addEventListener('change', (e) => savePreference('dataRetention', e.target.value));
   if (preferredNameInput) preferredNameInput.addEventListener('input', (e) => savePreference('preferredName', e.target.value));
-  if (faceTrackingToggle && !faceTrackingToggle.disabled) {
-      faceTrackingToggle.addEventListener('change', (e) => savePreference('faceTrackingEnabled', e.target.checked));
+  
+  if (faceTrackingToggle) {
+      faceTrackingToggle.addEventListener('change', (e) => {
+        if(!faceTrackingToggle.disabled) {
+            savePreference('faceTrackingEnabled', e.target.checked);
+            // Also update the emotion display visibility immediately
+            const isEnabled = e.target.checked;
+            const emotionDisplay = document.querySelector('.emotion-display');
+            if (emotionDisplay) {
+                emotionDisplay.style.display = isEnabled ? 'block' : 'none';
+            }
+        }
+    });
   }
 
   // AI Voice Selection Event Listeners
-  if (aiVoiceSelect && !aiVoiceSelect.disabled) {
+  if (aiVoiceSelect) {
       aiVoiceSelect.addEventListener('change', (e) => {
+        if (!aiVoiceSelect.disabled) {
           const selectedVoiceURI = e.target.value;
           localStorage.setItem('selectedAiVoice', selectedVoiceURI);
           console.log('Selected AI Voice saved:', selectedVoiceURI);
+        }
       });
   }
 
-  if (playVoiceSampleBtn && !playVoiceSampleBtn.disabled) {
+  if (playVoiceSampleBtn) {
       playVoiceSampleBtn.addEventListener('click', () => {
-          const selectedVoiceURI = aiVoiceSelect.value;
-          const sampleText = 'Hello, this is a sample of my voice.';
-          const utterance = new SpeechSynthesisUtterance(sampleText);
+          if (!playVoiceSampleBtn.disabled) {
+            const selectedVoiceURI = aiVoiceSelect.value;
+            if (!selectedVoiceURI) {
+                alert('Please select a voice from the dropdown list first.');
+                return;
+            }
+            const sampleText = 'Hello, this is a sample of my voice.';
+            const utterance = new SpeechSynthesisUtterance(sampleText);
 
-          const selectedVoice = voices.find(voice => voice.voiceURI === selectedVoiceURI);
-          if (selectedVoice) {
-              utterance.voice = selectedVoice;
-              speechSynthesis.speak(utterance);
-          } else {
-              console.warn('No voice selected or selected voice not found.');
-              alert('Please select a voice first.');
+            // --- FIX 2: `voices` is now accessible here ---
+            const selectedVoice = voices.find(voice => voice.voiceURI === selectedVoiceURI);
+            
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+                speechSynthesis.speak(utterance);
+            } else {
+                console.warn('No voice selected or selected voice not found.');
+                // This can happen if voices load after selection is made, try fetching again
+                const currentVoices = speechSynthesis.getVoices();
+                const voiceRetry = currentVoices.find(voice => voice.voiceURI === selectedVoiceURI);
+                if (voiceRetry) {
+                    utterance.voice = voiceRetry;
+                    speechSynthesis.speak(utterance);
+                } else {
+                    alert('Could not find the selected voice. Please try another.');
+                }
+            }
           }
       });
   }
 
   // AI Journal Summaries Event Listeners
-  if (generateSummaryBtn && !generateSummaryBtn.disabled) {
-      generateSummaryBtn.addEventListener('click', generateSummary);
+  if (generateSummaryBtn) {
+      generateSummaryBtn.addEventListener('click', () => {
+        if (!generateSummaryBtn.disabled) generateSummary();
+    });
   }
 
-  if (exportSummaryBtn && !exportSummaryBtn.disabled) {
-      exportSummaryBtn.addEventListener('click', exportSummary);
+  if (exportSummaryBtn) {
+      exportSummaryBtn.addEventListener('click', () => {
+        if (!exportSummaryBtn.disabled) exportSummary();
+    });
   }
 
   // Explicitly register Chart.js adapter for date-fns and core components
@@ -305,25 +356,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Initialize face tracking toggle based on stored preference
-const isFaceTrackingEnabled = localStorage.getItem('faceTrackingEnabled') === 'true';
-if (faceTrackingToggle) {
-    faceTrackingToggle.checked = isFaceTrackingEnabled;
-}
 
-// Add event listener for face tracking toggle
-if (faceTrackingToggle) {
-    faceTrackingToggle.addEventListener('change', function() {
-        const isEnabled = this.checked;
-        localStorage.setItem('faceTrackingEnabled', isEnabled);
-        
-        // Find and update emotion display visibility on all pages
-        const emotionDisplay = document.querySelector('.emotion-display');
-        if (emotionDisplay) {
-            emotionDisplay.style.display = isEnabled ? 'block' : 'none';
-        }
-    });
-}
+// Logic for face tracking moved inside the DOMContentLoaded change event listener for better coherence.
 
 // Utility functions for conversations (copied from history.js to ensure accessibility)
 function getConversations() {
@@ -729,7 +763,8 @@ async function exportSummary() {
 // Function to update trigger word input visibility
 function updateTriggerWordVisibility() {
     if (triggerWordInputContainer && triggerDetectionToggle) {
-        if (triggerDetectionToggle.checked) {
+        // Visibility should depend on the toggle being checked AND not disabled
+        if (triggerDetectionToggle.checked && !triggerDetectionToggle.disabled) {
             triggerWordInputContainer.style.display = 'flex';
         } else {
             triggerWordInputContainer.style.display = 'none';
@@ -739,4 +774,4 @@ function updateTriggerWordVisibility() {
             }
         }
     }
-} 
+}

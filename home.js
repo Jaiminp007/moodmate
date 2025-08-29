@@ -1244,7 +1244,6 @@ function startFaceDetection() {
         happy: 'assets/happy.png',
         sad: 'assets/sad.png',
         neutral: 'assets/neutral.png',
-        angry: 'assets/angry.png',
         fearful: 'assets/fearful.png',
         disgusted: 'assets/disgusted.png',
         surprised: 'assets/surprised.png'
